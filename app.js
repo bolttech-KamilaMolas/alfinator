@@ -460,7 +460,11 @@
             historyList.innerHTML = '<p class="empty-state">Nikt jeszcze nie losował</p>';
             return;
         }
-        historyList.innerHTML = weekHistory.map((h, idx) => `
+        // Sort chronologically: oldest first (1 = earliest draw)
+        const sorted = [...weekHistory].sort((a, b) =>
+            new Date(a.timestamp) - new Date(b.timestamp)
+        );
+        historyList.innerHTML = sorted.map((h, idx) => `
             <div class="history-item">
                 <span class="name">${idx + 1}. ${h.name}</span>
                 <span class="date">${h.date}</span>
