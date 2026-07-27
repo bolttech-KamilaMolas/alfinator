@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableDelayedExpansion
 echo ================================
 echo   ALFinator - Aktualizacja pliku
 echo ================================
@@ -8,12 +9,13 @@ REM Kopiuj najnowszy plik Planowanie_IT_R&D*.xlsx z folderu Pobrane do repo
 echo Szukam pliku Planowanie_IT_R^&D w Pobranych...
 set "DOWNLOADS=%USERPROFILE%\Downloads"
 set "TARGET=c:\Users\kamila.molas\Kirus\daily-picker\data\capacity.xlsx"
+set "PATTERN=Planowanie_IT_R&D*.xlsx"
 
 REM Szukaj najnowszego pliku pasujacego do nazwy z SharePoint
 set "FOUND="
-for /f "delims=" %%F in ('dir /b /o-d "%DOWNLOADS%\Planowanie_IT_R&D*.xlsx" 2^>nul') do (
+for /f "delims=" %%F in ('dir /b /o-d "!DOWNLOADS!\!PATTERN!" 2^>nul') do (
     if not defined FOUND (
-        set "FOUND=%DOWNLOADS%\%%F"
+        set "FOUND=%%F"
     )
 )
 
@@ -27,17 +29,22 @@ if not defined FOUND (
     exit /b 1
 )
 
-echo Znaleziono: %FOUND%
+echo Znaleziono: !FOUND!
 echo Kopiuje jako capacity.xlsx...
-copy /y "%FOUND%" "%TARGET%"
+copy /y "!DOWNLOADS!\!FOUND!" "!TARGET!"
 echo Skopiowano do repo.
 echo.
 
 REM Git commit i push
 cd /d "c:\Users\kamila.molas\Kirus\daily-picker"
 git add data\capacity.xlsx
-git commit -m "Update capacity data %date%"
-git push
+git status --short data\capacity.xlsx | findstr /r "." >nul
+if errorlevel 1 (
+    echo Brak zmian w capacity.xlsx - plik jest aktualny.
+) else (
+    git commit -m "Update capacity data %date%"
+    git push
+)
 
 echo.
 echo ================================
