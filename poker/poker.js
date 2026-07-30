@@ -552,7 +552,10 @@
             resultsPanel.classList.add('hidden');
             // Hide final estimate inputs during voting
             document.querySelectorAll('.final-col').forEach(el => el.classList.add('hidden'));
-            cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('disabled'));
+            // Only enable cards if there's an active task
+            if (room.currentIssue) {
+                cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('disabled'));
+            }
             // Reset save button for next round
             saveFinalBtn.disabled = false;
             saveFinalBtn.textContent = '\u2705 Zapisz';
@@ -835,6 +838,7 @@
         selectedCard = null;
         confirmVoteBtn.disabled = true;
         voteStatus.textContent = '';
+        isRevealed = false;
 
         renderIssueQueue();
         roomRef.child('issueList').set(issueList);
