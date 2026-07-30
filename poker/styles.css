@@ -449,15 +449,11 @@ select.input {
     border-radius: 6px;
     font-size: 0.8rem;
     transition: background 0.15s ease;
+    gap: 0.3rem;
 }
 
 .player-row:hover {
     background: var(--gray-50);
-}
-
-.player-name {
-    font-weight: 500;
-    color: var(--gray-700);
 }
 
 .player-name.is-moderator::after {
@@ -729,6 +725,67 @@ select.input {
 .toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+}
+
+/* === EMOJI PICKER & REACTIONS === */
+.emoji-popup {
+    position: fixed;
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.emoji-popup emoji-picker {
+    --num-columns: 8;
+    --emoji-size: 1.3rem;
+    --background: var(--white);
+    --border-color: var(--gray-200);
+    --indicator-color: var(--cyan);
+    --input-border-color: var(--gray-200);
+    --input-font-size: 0.85rem;
+    height: 320px;
+    width: 320px;
+}
+
+/* Player name clickable for emoji */
+.player-name {
+    font-weight: 500;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.player-name:hover {
+    color: var(--cyan);
+}
+
+/* Emoji reactions */
+.player-reactions {
+    display: inline-flex;
+    gap: 0.15rem;
+    margin-left: 0.3rem;
+}
+
+.emoji-reaction {
+    display: inline-block;
+    font-size: 1.1rem;
+    animation: emojiPop 0.3s ease;
+}
+
+.emoji-fadeout {
+    animation: emojiFade 0.3s ease forwards;
+}
+
+@keyframes emojiPop {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes emojiFade {
+    from { transform: scale(1); opacity: 1; }
+    to { transform: scale(0.5); opacity: 0; }
 }
 
 /* === RESPONSIVE === */

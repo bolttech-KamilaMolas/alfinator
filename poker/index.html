@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -180,6 +181,11 @@
         <footer class="footer">
             <p>ALFinator Poker · MD: 1h–10d · SP: Fibonacci 1–21</p>
         </footer>
+
+        <!-- Emoji picker popup -->
+        <div class="emoji-popup hidden" id="emojiPopup">
+            <emoji-picker id="emojiPicker"></emoji-picker>
+        </div>
     </div>
 
     <script src="poker.js"></script>

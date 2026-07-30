@@ -40,6 +40,7 @@
     let sessionEstimates = []; // { issue, devEstimate, qaEstimate }
     let isLeaving = false;
     let selectedCard = null;
+    let emojiTarget = null; // player key we're throwing at
 
     // --- DOM REFS ---
     const lobbySection = document.getElementById('lobbySection');
@@ -85,6 +86,8 @@
     const totalAll = document.getElementById('totalAll');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
     const unitToggle = document.getElementById('unitToggle');
+    const emojiPopup = document.getElementById('emojiPopup');
+    const emojiPicker = document.getElementById('emojiPicker');
 
     // --- UTILITIES ---
     function generateRoomCode() {
@@ -108,9 +111,9 @@
             select.innerHTML = '<option value="" disabled selected>Wybierz siebie...</option>';
 
             // Group by role
-            const devs = teamMembers.filter(m => m.role === 'dev');
-            const qas = teamMembers.filter(m => m.role === 'qa');
-            const others = teamMembers.filter(m => m.role === 'other');
+            const devs = teamMembers.filter(m => m.role === 'dev').sort((a, b) => a.fullName.localeCompare(b.fullName, 'pl'));
+            const qas = teamMembers.filter(m => m.role === 'qa').sort((a, b) => a.fullName.localeCompare(b.fullName, 'pl'));
+            const others = teamMembers.filter(m => m.role === 'other').sort((a, b) => a.fullName.localeCompare(b.fullName, 'pl'));
 
             if (devs.length > 0) {
                 const group = document.createElement('optgroup');
@@ -366,6 +369,19 @@
             updateRoomState(room);
         });
         listeners.push({ ref: roomRef, event: 'value' });
+
+        // Listen to reactions
+        const reactionsRef = roomRef.child('reactions');
+        reactionsRef.on('child_added', (snapshot) => {
+            const reaction = snapshot.val();
+            if (!reaction) return;
+            // Ignore old reactions (older than 5 seconds)
+            if (Date.now() - reaction.timestamp > 5000) return;
+            showEmojiReaction(reaction.to, reaction.emoji);
+            // Clean up old reaction from Firebase after showing
+            setTimeout(() => snapshot.ref.remove(), 4000);
+        });
+        listeners.push({ ref: reactionsRef, event: 'child_added' });
     }
 
     function updateRoomState(room) {
@@ -474,7 +490,8 @@
 
         return `
             <div class="player-row">
-                <span class="player-name${modClass}">${escapeHtml(player.name)}</span>
+                <span class="player-name${modClass}" data-player-key="${escapeHtml(sanitizeKey(player.name))}" data-player-name="${escapeHtml(player.name)}">${escapeHtml(player.name)}</span>
+                <span class="player-reactions" id="reactions-${sanitizeKey(player.name)}"></span>
                 ${statusHTML}
             </div>
         `;
@@ -567,6 +584,29 @@
 
     function firstName(fullName) {
         return fullName.split(' ')[0];
+    }
+
+    function showEmojiReaction(targetKey, emoji) {
+        const container = document.getElementById('reactions-' + targetKey);
+        if (!container) return;
+
+        const span = document.createElement('span');
+        span.className = 'emoji-reaction';
+        span.textContent = emoji;
+        container.appendChild(span);
+
+        // Keep max 3 reactions visible
+        while (container.children.length > 3) {
+            container.removeChild(container.firstChild);
+        }
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            if (span.parentNode) {
+                span.classList.add('emoji-fadeout');
+                setTimeout(() => span.remove(), 300);
+            }
+        }, 3000);
     }
 
     // --- SESSION SUMMARY ---
@@ -843,6 +883,50 @@
     // Unit toggle
     unitToggle.querySelectorAll('.unit-btn').forEach(btn => {
         btn.addEventListener('click', () => switchUnit(btn.dataset.unit));
+    });
+
+    // Emoji throwing - click player name to open picker
+    document.querySelector('.players-panel').addEventListener('click', (e) => {
+        const nameEl = e.target.closest('.player-name');
+        if (!nameEl) return;
+        const targetKey = nameEl.dataset.playerKey;
+        if (!targetKey) return;
+        // Don't throw at yourself
+        if (targetKey === sanitizeKey(currentPlayer.name)) return;
+
+        emojiTarget = targetKey;
+        // Position popup near click
+        emojiPopup.style.top = (e.clientY - 350) + 'px';
+        emojiPopup.style.left = Math.min(e.clientX, window.innerWidth - 340) + 'px';
+        emojiPopup.classList.remove('hidden');
+    });
+
+    // Emoji picker selection handler
+    emojiPicker.addEventListener('emoji-click', (e) => {
+        if (!emojiTarget || !roomRef) return;
+        const emoji = e.detail.unicode;
+
+        // Send reaction to Firebase
+        roomRef.child('reactions').push({
+            from: currentPlayer.name,
+            to: emojiTarget,
+            emoji: emoji,
+            timestamp: Date.now()
+        });
+
+        // Close picker
+        emojiPopup.classList.add('hidden');
+        emojiTarget = null;
+    });
+
+    // Close picker on outside click
+    document.addEventListener('click', (e) => {
+        if (!emojiPopup.classList.contains('hidden') &&
+            !emojiPopup.contains(e.target) &&
+            !e.target.closest('.player-name')) {
+            emojiPopup.classList.add('hidden');
+            emojiTarget = null;
+        }
     });
 
     // Enter key in lobby inputs
