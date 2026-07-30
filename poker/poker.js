@@ -47,6 +47,7 @@
     const joinRoomBtn = document.getElementById('joinRoomBtn');
     const roomCodeDisplay = document.getElementById('roomCodeDisplay');
     const copyRoomBtn = document.getElementById('copyRoomBtn');
+    const leaveRoomBtn = document.getElementById('leaveRoomBtn');
     const participantCount = document.getElementById('participantCount');
     const issueDisplay = document.getElementById('issueDisplay');
     const issueControls = document.getElementById('issueControls');
@@ -94,6 +95,55 @@
         return 'other';
     }
 
+    function populatePlayerSelects() {
+        const selects = [moderatorName, playerName];
+        selects.forEach(select => {
+            // Keep the placeholder option
+            select.innerHTML = '<option value="" disabled selected>Wybierz siebie...</option>';
+
+            // Group by role
+            const devs = teamMembers.filter(m => m.role === 'dev');
+            const qas = teamMembers.filter(m => m.role === 'qa');
+            const others = teamMembers.filter(m => m.role === 'other');
+
+            if (devs.length > 0) {
+                const group = document.createElement('optgroup');
+                group.label = '\ud83d\udd27 DEV';
+                devs.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.fullName;
+                    opt.textContent = m.fullName;
+                    group.appendChild(opt);
+                });
+                select.appendChild(group);
+            }
+
+            if (qas.length > 0) {
+                const group = document.createElement('optgroup');
+                group.label = '\ud83e\uddea QA';
+                qas.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.fullName;
+                    opt.textContent = m.fullName;
+                    group.appendChild(opt);
+                });
+                select.appendChild(group);
+            }
+
+            if (others.length > 0) {
+                const group = document.createElement('optgroup');
+                group.label = '\ud83d\udc64 Inni';
+                others.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.fullName;
+                    opt.textContent = m.fullName;
+                    group.appendChild(opt);
+                });
+                select.appendChild(group);
+            }
+        });
+    }
+
     function showToast(message) {
         let toast = document.querySelector('.toast');
         if (!toast) {
@@ -127,9 +177,10 @@
             const json = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
             parseTeamData(json);
+            populatePlayerSelects();
         } catch (err) {
             console.warn('Could not load team from Excel:', err);
-            // App still works — users just type their names manually
+            // App still works — selects will be empty, fallback below
         }
     }
 
@@ -672,9 +723,9 @@
 
     // --- EVENT LISTENERS ---
     createRoomBtn.addEventListener('click', () => {
-        const name = moderatorName.value.trim();
+        const name = moderatorName.value;
         if (!name) {
-            showToast('Wpisz swoje imi\u0119 i nazwisko!');
+            showToast('Wybierz siebie z listy!');
             moderatorName.focus();
             return;
         }
@@ -683,9 +734,9 @@
 
     joinRoomBtn.addEventListener('click', () => {
         const code = roomCodeInput.value.trim();
-        const name = playerName.value.trim();
+        const name = playerName.value;
         if (!code) { showToast('Wpisz kod pokoju!'); roomCodeInput.focus(); return; }
-        if (!name) { showToast('Wpisz swoje imi\u0119!'); playerName.focus(); return; }
+        if (!name) { showToast('Wybierz siebie z listy!'); playerName.focus(); return; }
         joinRoom(code, name);
     });
 
@@ -710,6 +761,15 @@
         if (e.key === 'Enter') setIssue();
     });
 
+    leaveRoomBtn.addEventListener('click', () => {
+        // Remove player from room
+        if (roomRef && currentPlayer) {
+            roomRef.child('players/' + sanitizeKey(currentPlayer.name)).remove();
+        }
+        resetToLobby();
+        showToast('Opuściłeś pokój');
+    });
+
     revealBtn.addEventListener('click', revealVotes);
     nextRoundBtn.addEventListener('click', nextRound);
     saveFinalBtn.addEventListener('click', () => saveFinalEstimate(false));
@@ -721,12 +781,6 @@
     });
 
     // Enter key in lobby inputs
-    moderatorName.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') createRoomBtn.click();
-    });
-    playerName.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') joinRoomBtn.click();
-    });
     roomCodeInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') joinRoomBtn.click();
     });
