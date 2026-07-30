@@ -21,7 +21,7 @@
     // --- CONFIG ---
     const EXCEL_URL = 'https://bolttech-kamilamolas.github.io/alfinator/data/capacity.xlsx';
     const FIBONACCI = ['1', '2', '3', '5', '8', '13', '21', '?', '\u2615'];
-    const MD_DECK = ['1h', '2h', '4h', '6h', '1d', '2d', '3d', '4d', '5d', '6d', '7d', '8d', '9d', '10d', '10+'];
+    const MD_DECK = ['1h', '2h', '4h', '6h', '1d', '2d', '3d', '4d', '5d', '6d', '7d', '8d', '9d', '10d', '10+', '🐱'];
     const NUMERIC_VALUES_SP = { '1': 1, '2': 2, '3': 3, '5': 5, '8': 8, '13': 13, '21': 21 };
     const NUMERIC_VALUES_MD = { '1h': 0.125, '2h': 0.25, '4h': 0.5, '6h': 0.75, '1d': 1, '2d': 2, '3d': 3, '4d': 4, '5d': 5, '6d': 6, '7d': 7, '8d': 8, '9d': 9, '10d': 10, '10+': 11 };
 
