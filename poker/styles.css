@@ -297,6 +297,7 @@ select.input {
 
 .moderator-controls {
     display: flex;
+    flex-direction: column;
     gap: 0.5rem;
     margin-top: 0.75rem;
 }
@@ -933,4 +934,75 @@ select.input {
     font-size: 0.7rem;
     color: var(--gray-600);
     margin-top: 0.2rem;
+}
+
+/* Issue queue */
+.issue-input-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.issue-input-row .input {
+    flex: 1;
+}
+
+.issue-queue {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+}
+
+.issue-queue:empty {
+    display: none;
+}
+
+.issue-queue-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.issue-queue-item:hover {
+    border-color: var(--cyan);
+    background: var(--cyan-bg);
+}
+
+.issue-queue-item.active {
+    border-color: var(--cyan);
+    background: var(--cyan-bg);
+    font-weight: 700;
+    border-left: 3px solid var(--cyan);
+}
+
+.issue-queue-item.done {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+.issue-queue-item-name {
+    flex: 1;
+    color: var(--navy);
+}
+
+.issue-queue-item-delete {
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.2rem;
+    border-radius: 4px;
+    transition: color 0.15s ease;
+}
+
+.issue-queue-item-delete:hover {
+    color: var(--danger);
 }

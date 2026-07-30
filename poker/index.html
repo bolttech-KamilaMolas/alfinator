@@ -96,8 +96,11 @@
                 </div>
                 <!-- Moderator controls for issue -->
                 <div class="moderator-controls hidden" id="issueControls">
-                    <input type="text" id="issueInput" placeholder="Nazwa zadania / numer JIRA" class="input input-wide" autocomplete="off">
-                    <button class="btn btn-primary btn-small" id="setIssueBtn">Ustaw</button>
+                    <div class="issue-input-row">
+                        <input type="text" id="issueInput" placeholder="Nazwa zadania / numer JIRA" class="input input-wide" autocomplete="off">
+                        <button class="btn btn-primary btn-small" id="addIssueBtn">➕ Dodaj</button>
+                    </div>
+                    <div class="issue-queue" id="issueQueue"></div>
                 </div>
             </div>
 

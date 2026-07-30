@@ -41,7 +41,9 @@
     let isLeaving = false;
     let selectedCard = null;
     let lastKnownIssue = '';
+    let issueList = []; // { id, name, status: 'pending'|'active'|'done' }
     let emojiTarget = null; // player key we're throwing at
+    let isRevealed = false;
 
     // --- DOM REFS ---
     const lobbySection = document.getElementById('lobbySection');
@@ -58,7 +60,8 @@
     const issueDisplay = document.getElementById('issueDisplay');
     const issueControls = document.getElementById('issueControls');
     const issueInput = document.getElementById('issueInput');
-    const setIssueBtn = document.getElementById('setIssueBtn');
+    const addIssueBtn = document.getElementById('addIssueBtn');
+    const issueQueue = document.getElementById('issueQueue');
     const cardsSection = document.getElementById('cardsSection');
     const cardsDeck = document.getElementById('cardsDeck');
     const confirmVoteBtn = document.getElementById('confirmVoteBtn');
@@ -494,11 +497,17 @@
 
         // Handle state changes
         if (room.state === 'revealed') {
+            isRevealed = true;
             showResults(room);
             cardsDeck.querySelectorAll('.card').forEach(c => c.classList.add('disabled'));
+            // Re-render players to show their votes
+            if (room.players) renderPlayers(room.players);
         } else {
+            isRevealed = false;
             resultsPanel.classList.add('hidden');
             cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('disabled'));
+            // Re-render players to hide votes
+            if (room.players) renderPlayers(room.players);
 
             // Only reset card selection when the issue actually changes (new round)
             const currentIssue = room.currentIssue || '';
@@ -516,6 +525,12 @@
         if (room.estimates) {
             sessionEstimates = Object.values(room.estimates);
             renderSessionSummary();
+        }
+
+        // Sync issue list from room
+        if (room.issueList && isModerator) {
+            issueList = room.issueList;
+            renderIssueQueue();
         }
     }
 
@@ -584,8 +599,13 @@
         let statusHTML;
 
         if (player.vote && player.vote !== '') {
-            // Check if revealed
-            statusHTML = `<span class="player-status voted">\u2713</span>`;
+            if (isRevealed) {
+                // Show actual vote value after reveal
+                statusHTML = `<span class="player-status revealed">${escapeHtml(player.vote)}</span>`;
+            } else {
+                // During voting, just show checkmark
+                statusHTML = `<span class="player-status voted">\u2713</span>`;
+            }
         } else {
             statusHTML = `<span class="player-status waiting">\u2022</span>`;
         }
@@ -746,11 +766,28 @@
     }
 
     // --- MODERATOR ACTIONS ---
-    function setIssue() {
+    function addIssue() {
         const issue = issueInput.value.trim();
         if (!issue) return;
-        roomRef.update({ currentIssue: issue, state: 'voting' });
+        const id = Date.now().toString(36);
+        issueList.push({ id, name: issue, status: 'pending' });
         issueInput.value = '';
+        renderIssueQueue();
+        // Sync to Firebase
+        roomRef.child('issueList').set(issueList);
+    }
+
+    function startVotingOnIssue(id) {
+        const item = issueList.find(i => i.id === id);
+        if (!item) return;
+
+        // Mark previous active as done
+        issueList.forEach(i => {
+            if (i.status === 'active') i.status = 'done';
+        });
+        item.status = 'active';
+
+        roomRef.update({ currentIssue: item.name, state: 'voting' });
         // Reset all votes
         roomRef.child('players').once('value', (snapshot) => {
             const updates = {};
@@ -765,6 +802,36 @@
         selectedCard = null;
         confirmVoteBtn.disabled = true;
         voteStatus.textContent = '';
+
+        renderIssueQueue();
+        roomRef.child('issueList').set(issueList);
+    }
+
+    function removeIssue(id) {
+        issueList = issueList.filter(i => i.id !== id);
+        renderIssueQueue();
+        roomRef.child('issueList').set(issueList);
+    }
+
+    function renderIssueQueue() {
+        if (!isModerator) {
+            issueQueue.innerHTML = '';
+            return;
+        }
+        if (issueList.length === 0) {
+            issueQueue.innerHTML = '';
+            return;
+        }
+        issueQueue.innerHTML = issueList.map(item => {
+            const activeClass = item.status === 'active' ? ' active' : '';
+            const doneClass = item.status === 'done' ? ' done' : '';
+            return `
+                <div class="issue-queue-item${activeClass}${doneClass}" data-issue-id="${item.id}">
+                    <span class="issue-queue-item-name">${escapeHtml(item.name)}</span>
+                    <button class="issue-queue-item-delete" data-delete-id="${item.id}" title="Usuń">✕</button>
+                </div>
+            `;
+        }).join('');
     }
 
     function revealVotes() {
@@ -801,10 +868,22 @@
             });
             roomRef.child('players').update(updates);
         });
-        roomRef.update({ state: 'voting', currentIssue: '' });
+        // Mark current as done and start next pending
+        const currentActive = issueList.find(i => i.status === 'active');
+        if (currentActive) currentActive.status = 'done';
+
+        const nextPending = issueList.find(i => i.status === 'pending');
+        if (nextPending) {
+            nextPending.status = 'active';
+            roomRef.update({ state: 'voting', currentIssue: nextPending.name });
+        } else {
+            roomRef.update({ state: 'voting', currentIssue: '' });
+        }
+        roomRef.child('issueList').set(issueList);
+        renderIssueQueue();
+
         resultsPanel.classList.add('hidden');
         cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-        issueInput.focus();
     }
 
     function saveFinalEstimate(silent) {
@@ -966,9 +1045,23 @@
         });
     });
 
-    setIssueBtn.addEventListener('click', setIssue);
+    addIssueBtn.addEventListener('click', addIssue);
     issueInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') setIssue();
+        if (e.key === 'Enter') addIssue();
+    });
+
+    // Issue queue clicks (delegation)
+    issueQueue.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.issue-queue-item-delete');
+        if (deleteBtn) {
+            e.stopPropagation();
+            removeIssue(deleteBtn.dataset.deleteId);
+            return;
+        }
+        const queueItem = e.target.closest('.issue-queue-item');
+        if (queueItem && !queueItem.classList.contains('done')) {
+            startVotingOnIssue(queueItem.dataset.issueId);
+        }
     });
 
     leaveRoomBtn.addEventListener('click', () => {
