@@ -54,6 +54,40 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Session history -->
+            <div class="history-card" id="historyCard">
+                <h3>📋 Historia sesji</h3>
+                <div class="history-list" id="sessionHistoryList">
+                    <p class="empty-state">Ładowanie...</p>
+                </div>
+                <!-- Expanded session detail -->
+                <div class="history-detail hidden" id="historyDetail">
+                    <button class="btn btn-ghost btn-small" id="historyBackBtn">← Wróć do listy</button>
+                    <h4 id="historyDetailTitle"></h4>
+                    <div class="summary-table-wrapper">
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Zadanie</th>
+                                    <th>DEV</th>
+                                    <th>QA</th>
+                                    <th>Suma</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyDetailBody"></tbody>
+                            <tfoot>
+                                <tr class="summary-total-row">
+                                    <td><strong>RAZEM</strong></td>
+                                    <td id="historyTotalDev">—</td>
+                                    <td id="historyTotalQa">—</td>
+                                    <td id="historyTotalAll">—</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- GAME ROOM -->

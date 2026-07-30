@@ -21,7 +21,12 @@
     // --- CONFIG ---
     const EXCEL_URL = 'https://bolttech-kamilamolas.github.io/alfinator/data/capacity.xlsx';
     const FIBONACCI = ['1', '2', '3', '5', '8', '13', '21', '?', '\u2615'];
+    const MD_CARDS = ['2h', '4h', '6h', '1d', '2d', '3d', '4d', '5d', '6d', '7d', '8d', '9d', '10d', '10+'];
     const NUMERIC_VALUES = { '1': 1, '2': 2, '3': 3, '5': 5, '8': 8, '13': 13, '21': 21 };
+    const MD_NUMERIC_VALUES = {
+        '2h': 0.25, '4h': 0.5, '6h': 0.75, '1d': 1, '2d': 2, '3d': 3, '4d': 4,
+        '5d': 5, '6d': 6, '7d': 7, '8d': 8, '9d': 9, '10d': 10, '10+': 10
+    };
 
     // Skillset classification
     const DEV_SKILLSETS = ['BE Developer', 'FE Developer'];
@@ -36,6 +41,7 @@
     let listeners = [];
     let currentUnit = 'md';
     let sessionEstimates = []; // { issue, devEstimate, qaEstimate }
+    let isLeaving = false;
 
     // --- DOM REFS ---
     const lobbySection = document.getElementById('lobbySection');
@@ -227,6 +233,13 @@
     }
 
     // --- ROOM MANAGEMENT ---
+    function getRoomDisplayName() {
+        const today = new Date().toLocaleDateString('pl-PL', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
+        });
+        return `ALF Refinement - ${today}`;
+    }
+
     function createRoom(moderatorFullName) {
         const code = generateRoomCode();
         const member = findTeamMember(moderatorFullName);
@@ -239,6 +252,7 @@
         roomRef = db.ref('poker_rooms/' + code);
         roomRef.set({
             created: new Date().toISOString(),
+            name: getRoomDisplayName(),
             moderator: moderatorFullName,
             unit: currentUnit,
             state: 'voting', // voting | revealed
@@ -344,6 +358,7 @@
 
         // Listen to room state
         roomRef.on('value', (snapshot) => {
+            if (isLeaving || !currentRoom) return;
             const room = snapshot.val();
             if (!room) {
                 // Room deleted
@@ -698,7 +713,10 @@
     }
 
     function resetToLobby() {
-        // Detach listeners
+        if (isLeaving) return;
+        isLeaving = true;
+
+        // Detach listeners first
         listeners.forEach(l => l.ref.off(l.event));
         listeners = [];
         roomRef = null;
@@ -713,6 +731,9 @@
         localStorage.removeItem('poker-room');
         localStorage.removeItem('poker-player');
         localStorage.removeItem('poker-moderator');
+
+        // Reset after a tick so any pending Firebase callbacks are ignored
+        setTimeout(() => { isLeaving = false; }, 100);
     }
 
     // --- URL ROOM CODE ---
@@ -762,11 +783,29 @@
     });
 
     leaveRoomBtn.addEventListener('click', () => {
+        // Detach listeners first to prevent race conditions
+        listeners.forEach(l => l.ref.off(l.event));
+        listeners = [];
+
         // Remove player from room
         if (roomRef && currentPlayer) {
             roomRef.child('players/' + sanitizeKey(currentPlayer.name)).remove();
         }
-        resetToLobby();
+
+        roomRef = null;
+        currentRoom = null;
+        currentPlayer = null;
+        isModerator = false;
+        sessionEstimates = [];
+        isLeaving = false;
+
+        gameSection.classList.add('hidden');
+        lobbySection.classList.remove('hidden');
+
+        localStorage.removeItem('poker-room');
+        localStorage.removeItem('poker-player');
+        localStorage.removeItem('poker-moderator');
+
         showToast('Opuściłeś pokój');
     });
 
@@ -785,9 +824,107 @@
         if (e.key === 'Enter') joinRoomBtn.click();
     });
 
+    // --- SESSION HISTORY ---
+    const sessionHistoryList = document.getElementById('sessionHistoryList');
+    const historyDetail = document.getElementById('historyDetail');
+    const historyBackBtn = document.getElementById('historyBackBtn');
+    const historyDetailTitle = document.getElementById('historyDetailTitle');
+    const historyDetailBody = document.getElementById('historyDetailBody');
+    const historyTotalDev = document.getElementById('historyTotalDev');
+    const historyTotalQa = document.getElementById('historyTotalQa');
+    const historyTotalAll = document.getElementById('historyTotalAll');
+
+    function loadSessionHistory() {
+        db.ref('poker_rooms').orderByChild('created').limitToLast(20).once('value', (snapshot) => {
+            const rooms = [];
+            snapshot.forEach(child => {
+                const room = child.val();
+                if (room.estimates && Object.keys(room.estimates).length > 0) {
+                    rooms.push({ code: child.key, ...room });
+                }
+            });
+
+            // Sort descending (newest first)
+            rooms.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+            if (rooms.length === 0) {
+                sessionHistoryList.innerHTML = '<p class="empty-state">Brak zakończonych sesji</p>';
+                return;
+            }
+
+            sessionHistoryList.innerHTML = rooms.map(room => {
+                const estimates = Object.values(room.estimates);
+                const sumDev = estimates.reduce((s, e) => s + (parseFloat(e.dev) || 0), 0);
+                const sumQa = estimates.reduce((s, e) => s + (parseFloat(e.qa) || 0), 0);
+                const unit = estimates[0]?.unit === 'sp' ? 'SP' : 'MD';
+                const date = new Date(room.created).toLocaleDateString('pl-PL', {
+                    day: '2-digit', month: '2-digit', year: 'numeric'
+                });
+
+                return `
+                    <div class="history-row" data-room-code="${room.code}">
+                        <div class="history-row-main">
+                            <span class="history-row-name">${escapeHtml(room.name || 'ALF Refinement - ' + date)}</span>
+                            <span class="history-row-meta">${estimates.length} zadań</span>
+                        </div>
+                        <div class="history-row-stats">
+                            <span class="history-stat">DEV: ${sumDev} ${unit}</span>
+                            <span class="history-stat">QA: ${sumQa} ${unit}</span>
+                            <span class="history-stat total">Σ ${sumDev + sumQa} ${unit}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Click handlers
+            sessionHistoryList.querySelectorAll('.history-row').forEach(row => {
+                row.addEventListener('click', () => {
+                    const code = row.dataset.roomCode;
+                    const room = rooms.find(r => r.code === code);
+                    if (room) showHistoryDetail(room);
+                });
+            });
+        });
+    }
+
+    function showHistoryDetail(room) {
+        sessionHistoryList.classList.add('hidden');
+        historyDetail.classList.remove('hidden');
+
+        const date = new Date(room.created).toLocaleDateString('pl-PL', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
+        });
+        historyDetailTitle.textContent = room.name || 'ALF Refinement - ' + date;
+
+        const estimates = Object.values(room.estimates);
+        const unit = estimates[0]?.unit === 'sp' ? 'SP' : 'MD';
+
+        historyDetailBody.innerHTML = estimates.map(est => `
+            <tr>
+                <td>${escapeHtml(est.issue || '—')}</td>
+                <td>${est.dev != null ? est.dev : '—'}</td>
+                <td>${est.qa != null ? est.qa : '—'}</td>
+                <td><strong>${((parseFloat(est.dev) || 0) + (parseFloat(est.qa) || 0)) || '—'}</strong></td>
+            </tr>
+        `).join('');
+
+        const sumDev = estimates.reduce((s, e) => s + (parseFloat(e.dev) || 0), 0);
+        const sumQa = estimates.reduce((s, e) => s + (parseFloat(e.qa) || 0), 0);
+
+        historyTotalDev.textContent = `${sumDev} ${unit}`;
+        historyTotalQa.textContent = `${sumQa} ${unit}`;
+        historyTotalAll.textContent = `${sumDev + sumQa} ${unit}`;
+    }
+
+    historyBackBtn.addEventListener('click', () => {
+        historyDetail.classList.add('hidden');
+        sessionHistoryList.classList.remove('hidden');
+    });
+
     // --- INIT ---
     async function init() {
         await loadTeamFromExcel();
+        loadSessionHistory();
 
         // Check URL for room code
         const urlRoom = getRoomFromURL();
