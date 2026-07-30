@@ -435,7 +435,7 @@
     }
 
     function sanitizeKey(str) {
-        return str.replace(/[.#$\[\]\/]/g, '_');
+        return (str || '').replace(/[.#$\[\]\/]/g, '_');
     }
 
     // --- ENTER ROOM & LISTENERS ---
@@ -603,7 +603,7 @@
         const qas = [];
         const others = [];
 
-        Object.values(players).forEach(p => {
+        Object.values(players).filter(p => p && p.name).forEach(p => {
             if (p.role === 'dev') devs.push(p);
             else if (p.role === 'qa') qas.push(p);
             else others.push(p);
@@ -704,7 +704,7 @@
     }
 
     function firstName(fullName) {
-        return fullName.split(' ')[0];
+        return (fullName || '').split(' ')[0] || '?';
     }
 
     function showEmojiReaction(targetKey, emoji) {
