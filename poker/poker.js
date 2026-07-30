@@ -171,6 +171,18 @@
         return map[vote];
     }
 
+    // Apply 1d minimum only when there's a mix of hour and day votes
+    function applyMinDay(values) {
+        if (currentUnit !== 'md' || values.length === 0) return values;
+        const hasDay = values.some(v => v >= 1);
+        const hasHour = values.some(v => v < 1);
+        // Mixed: clamp hours to 1d. All hours: keep as-is.
+        if (hasDay && hasHour) {
+            return values.map(v => v < 1 ? 1 : v);
+        }
+        return values;
+    }
+
     function getUnitLabel() {
         return currentUnit === 'md' ? 'MD' : 'SP';
     }
@@ -406,10 +418,14 @@
             cardsDeck.querySelectorAll('.card').forEach(c => c.classList.add('disabled'));
         } else {
             resultsPanel.classList.add('hidden');
-            cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('disabled'));
+            cardsDeck.querySelectorAll('.card').forEach(c => {
+                c.classList.remove('disabled');
+                c.classList.remove('selected');
+            });
             // Reset vote button for new round
             selectedCard = null;
             confirmVoteBtn.disabled = true;
+            confirmVoteBtn.textContent = '✅ Głosuj';
             voteStatus.textContent = '';
         }
 
@@ -548,8 +564,10 @@
         ).join('');
 
         // Summaries
-        const devNums = devVotesArr.map(v => getNumericValue(v.value)).filter(n => n !== undefined);
-        const qaNums = qaVotesArr.map(v => getNumericValue(v.value)).filter(n => n !== undefined);
+        const devNumsRaw = devVotesArr.map(v => getNumericValue(v.value)).filter(n => n !== undefined);
+        const qaNumsRaw = qaVotesArr.map(v => getNumericValue(v.value)).filter(n => n !== undefined);
+        const devNums = applyMinDay(devNumsRaw);
+        const qaNums = applyMinDay(qaNumsRaw);
 
         devSummary.textContent = devNums.length > 0
             ? `\u00d8 ${avg(devNums).toFixed(1)} ${getUnitLabel()} (${devNums.length} g\u0142os\u00f3w)`
@@ -560,10 +578,10 @@
             : 'Brak g\u0142os\u00f3w numerycznych';
 
         // Total
-        if (allNumeric.length > 0) {
-            const totalAvg = avg(allNumeric).toFixed(1);
-            const totalMed = median(allNumeric).toFixed(1);
-            resultTotal.textContent = `\ud83d\udcca \u0141\u0105cznie: \u00d8 ${totalAvg} | mediana ${totalMed} ${getUnitLabel()} (${allNumeric.length} g\u0142os\u00f3w)`;
+        const allNumericAdj = applyMinDay(allNumeric);
+        if (allNumericAdj.length > 0) {
+            const totalAvg = avg(allNumericAdj).toFixed(1);
+            resultTotal.textContent = `\ud83d\udcca \u0141\u0105cznie: \u00d8 ${totalAvg} ${getUnitLabel()} (${allNumericAdj.length} g\u0142os\u00f3w)`;
         } else {
             resultTotal.textContent = 'Brak g\u0142os\u00f3w numerycznych';
         }
