@@ -29,6 +29,8 @@
     const DEV_SKILLSETS = ['BE Developer', 'FE Developer'];
     const QA_SKILLSETS = ['QA coordinator', 'QAA', 'QA'];
 
+    const IS_ADMIN = new URLSearchParams(window.location.search).has('admin');
+
     // --- STATE ---
     let teamMembers = []; // { fullName, skillset, role: 'dev'|'qa'|'other' }
     let currentRoom = null;
@@ -98,6 +100,7 @@
     const closeHistoryPopup = document.getElementById('closeHistoryPopup');
     const currentIssueBanner = document.getElementById('currentIssueBanner');
     const currentIssueName = document.getElementById('currentIssueName');
+    const clearPokerHistoryBtn = document.getElementById('clearPokerHistoryBtn');
 
     // --- UTILITIES ---
     function generateRoomCode() {
@@ -1320,10 +1323,31 @@
         }
     });
 
+    clearPokerHistoryBtn.addEventListener('click', () => {
+        if (!confirm('ADMIN: Usunąć WSZYSTKIE pokoje z historii? (nieodwracalne!)')) return;
+        db.ref('poker_rooms').once('value', (snapshot) => {
+            const rooms = snapshot.val() || {};
+            let removed = 0;
+            Object.entries(rooms).forEach(([code, room]) => {
+                const playerCount = room.players ? Object.keys(room.players).length : 0;
+                // Only remove rooms with no active players (historical)
+                if (playerCount === 0) {
+                    db.ref('poker_rooms/' + code).remove();
+                    removed++;
+                }
+            });
+            showToast(`Usunięto ${removed} pokoi z historii`);
+        });
+    });
+
     // --- INIT ---
     async function init() {
         await loadTeamFromExcel();
         loadRoomsList();
+
+        if (IS_ADMIN) {
+            clearPokerHistoryBtn.classList.remove('hidden');
+        }
 
         // Check URL for room code
         const urlRoom = getRoomFromURL();
