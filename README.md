@@ -66,9 +66,12 @@ Aby dodać/usunąć — edytuj tablicę, commit, push.
 ### Sposób 1: Skrypt (najłatwiej)
 1. Pobierz plik Excel z SharePoint
 2. Dwuklik na `update-capacity.bat`
-   - Skrypt znajdzie najnowszy .xlsx w folderze Pobrane
+   - Skrypt znajdzie najnowszy `Planowanie_IT_R&D*.xlsx` w folderze Pobrane
    - Skopiuje go jako `data/capacity.xlsx`
-   - Zrobi git commit + push
+   - Zrobi git commit + push (jeśli plik się zmienił)
+   - Jeśli plik nie uległ zmianie — pomija commit
+
+> **Uwaga:** Skrypt obsługuje znak `&` w nazwie pliku (R&D) dzięki `EnableDelayedExpansion`.
 
 ### Sposób 2: Ręcznie
 ```bash
@@ -115,9 +118,9 @@ daily-picker/
     └── capacity.xlsx       # Plik z dostępnością (aktualizowany co tydzień)
 ```
 
-## Historia projektu (21.07.2026)
+## Historia projektu
 
-1. Stworzenie apki z uploadem pliku Excel
+1. Stworzenie apki z uploadem pliku Excel (21.07.2026)
 2. Dodanie wykluczonych (Kamila, Adrian, Szymon)
 3. Deploy na GitHub Pages
 4. Rebranding na ALFinator + ikonka ALFa
@@ -129,6 +132,7 @@ daily-picker/
 10. Zmiana nazwy repo na `alfinator`
 11. Usunięcie ręcznego czyszczenia historii dla użytkowników — tylko auto-clear + admin
 12. Audit log w Firebase (`audit_log`) — logowanie zdarzeń: auto_clear, admin_clear
+13. Fix `update-capacity.bat` — obsługa `&` w nazwie pliku R&D (27.07.2026)
 
 ## Tryb administratora
 
