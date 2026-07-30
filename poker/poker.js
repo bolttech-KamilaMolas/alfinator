@@ -40,6 +40,7 @@
     let sessionEstimates = []; // { issue, devEstimate, qaEstimate }
     let isLeaving = false;
     let selectedCard = null;
+    let lastKnownIssue = '';
     let emojiTarget = null; // player key we're throwing at
 
     // --- DOM REFS ---
@@ -188,7 +189,7 @@
                 activeRoomsList.innerHTML = activeRooms.map(r => `
                     <div class="room-item active" data-room-code="${r.code}">
                         <div class="room-item-info">
-                            <span class="room-item-name">${escapeHtml(r.room.currentIssue || 'Refinement')} <span style="opacity:0.5">[${r.code}]</span></span>
+                            <span class="room-item-name">${escapeHtml(r.room.name || 'Refinement')} <span style="opacity:0.5">[${r.code}]</span></span>
                             <span class="room-item-meta">${r.dateStr} \u00b7 ${r.playerCount} ${r.playerCount === 1 ? 'osoba' : 'os\u00f3b'} \u00b7 Moderator: ${escapeHtml(firstName(r.room.moderator || ''))}</span>
                         </div>
                         <span class="room-item-badge live">LIVE</span>
@@ -210,7 +211,7 @@
                     return `
                         <div class="room-item">
                             <div class="room-item-info">
-                                <span class="room-item-name">Refinement ${r.dateStr.split(',')[0]}</span>
+                                <span class="room-item-name">${escapeHtml(r.room.name || 'Refinement ' + r.dateStr.split(',')[0])}</span>
                                 <span class="room-item-meta">Moderator: ${escapeHtml(firstName(r.room.moderator || ''))}</span>
                                 <span class="room-item-summary">${summaryText}</span>
                             </div>
@@ -334,8 +335,10 @@
         isModerator = true;
 
         roomRef = db.ref('poker_rooms/' + code);
+        const roomName = 'ALF Refinement - ' + new Date().toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
         roomRef.set({
             created: new Date().toISOString(),
+            name: roomName,
             moderator: moderatorFullName,
             unit: currentUnit,
             state: 'voting', // voting | revealed
@@ -412,7 +415,7 @@
         gameSection.classList.remove('hidden');
         roomsListSection.classList.add('hidden');
 
-        roomCodeDisplay.textContent = currentRoom;
+        roomCodeDisplay.textContent = currentRoom; // will be updated to room name by listener
 
         if (isModerator) {
             issueControls.classList.remove('hidden');
@@ -421,6 +424,7 @@
         }
 
         renderCards();
+        lastKnownIssue = '';
         attachRoomListeners();
 
         // Save to localStorage for reconnect
@@ -469,6 +473,11 @@
     }
 
     function updateRoomState(room) {
+        // Update room name display
+        if (room.name) {
+            roomCodeDisplay.textContent = room.name;
+        }
+
         // Update issue display
         if (room.currentIssue) {
             issueDisplay.innerHTML = `<h3>${escapeHtml(room.currentIssue)}</h3>`;
@@ -489,15 +498,18 @@
             cardsDeck.querySelectorAll('.card').forEach(c => c.classList.add('disabled'));
         } else {
             resultsPanel.classList.add('hidden');
-            cardsDeck.querySelectorAll('.card').forEach(c => {
-                c.classList.remove('disabled');
-                c.classList.remove('selected');
-            });
-            // Reset vote button for new round
-            selectedCard = null;
-            confirmVoteBtn.disabled = true;
-            confirmVoteBtn.textContent = '✅ Głosuj';
-            voteStatus.textContent = '';
+            cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('disabled'));
+
+            // Only reset card selection when the issue actually changes (new round)
+            const currentIssue = room.currentIssue || '';
+            if (currentIssue !== lastKnownIssue) {
+                lastKnownIssue = currentIssue;
+                cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+                selectedCard = null;
+                confirmVoteBtn.disabled = true;
+                confirmVoteBtn.textContent = '✅ Głosuj';
+                voteStatus.textContent = '';
+            }
         }
 
         // Update session estimates for summary
