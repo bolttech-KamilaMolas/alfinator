@@ -40,7 +40,7 @@
     let sessionEstimates = []; // { issue, devEstimate, qaEstimate }
     let isLeaving = false;
     let selectedCard = null;
-    let lastKnownIssue = '';
+    let lastRoundId = '';
     let issueList = []; // { id, name, status: 'pending'|'active'|'done' }
     let emojiTarget = null; // player key we're throwing at
     let isRevealed = false;
@@ -69,17 +69,11 @@
     const qaPlayersList = document.getElementById('qaPlayersList');
     const otherPlayersList = document.getElementById('otherPlayersList');
     const otherGroup = document.getElementById('otherGroup');
-    const moderatorActions = document.getElementById('moderatorActions');
-    const revealBtn = document.getElementById('revealBtn');
-    const resetVotesBtn = document.getElementById('resetVotesBtn');
-    const nextRoundBtn = document.getElementById('nextRoundBtn');
     const resultsPanel = document.getElementById('resultsPanel');
-    const devVotes = document.getElementById('devVotes');
-    const qaVotes = document.getElementById('qaVotes');
     const devSummary = document.getElementById('devSummary');
     const qaSummary = document.getElementById('qaSummary');
     const resultTotal = document.getElementById('resultTotal');
-    const finalEstimate = document.getElementById('finalEstimate');
+    const finalCol = document.getElementById('finalCol');
     const finalDev = document.getElementById('finalDev');
     const finalQa = document.getElementById('finalQa');
     const saveFinalBtn = document.getElementById('saveFinalBtn');
@@ -102,6 +96,8 @@
     const historyTotalQa = document.getElementById('historyTotalQa');
     const historyTotalAll = document.getElementById('historyTotalAll');
     const closeHistoryPopup = document.getElementById('closeHistoryPopup');
+    const currentIssueBanner = document.getElementById('currentIssueBanner');
+    const currentIssueName = document.getElementById('currentIssueName');
 
     // --- UTILITIES ---
     function generateRoomCode() {
@@ -375,6 +371,7 @@
             unit: currentUnit,
             state: 'voting', // voting | revealed
             currentIssue: '',
+            roundId: '',
             players: {
                 [sanitizeKey(moderatorFullName)]: {
                     name: moderatorFullName,
@@ -451,12 +448,11 @@
 
         if (isModerator) {
             issueControls.classList.remove('hidden');
-            moderatorActions.classList.remove('hidden');
-            finalEstimate.classList.remove('hidden');
+            document.querySelectorAll('.final-col').forEach(el => el.classList.remove('hidden'));
         }
 
         renderCards();
-        lastKnownIssue = '';
+        lastRoundId = '';
         attachRoomListeners();
 
         // Save to localStorage for reconnect
@@ -472,7 +468,6 @@
             const players = snapshot.val() || {};
             renderPlayers(players);
             updateParticipantCount(players);
-            updateRevealButton(players);
         });
         listeners.push({ ref: playersRef, event: 'value' });
 
@@ -510,6 +505,15 @@
             roomCodeDisplay.textContent = room.name;
         }
 
+        // Update current issue banner (visible to all)
+        if (room.currentIssue) {
+            currentIssueBanner.classList.remove('hidden');
+            currentIssueName.textContent = room.currentIssue;
+        } else {
+            currentIssueBanner.classList.add('hidden');
+            currentIssueName.textContent = '';
+        }
+
         // Update unit from room
         if (room.unit && room.unit !== currentUnit) {
             currentUnit = room.unit;
@@ -531,14 +535,14 @@
             // Re-render players to hide votes
             if (room.players) renderPlayers(room.players);
 
-            // Only reset card selection when the issue actually changes (new round)
-            const currentIssue = room.currentIssue || '';
-            if (currentIssue !== lastKnownIssue) {
-                lastKnownIssue = currentIssue;
+            // Reset card selection when round changes
+            const roundId = room.roundId || '';
+            if (roundId !== lastRoundId) {
+                lastRoundId = roundId;
                 cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
                 selectedCard = null;
                 confirmVoteBtn.disabled = true;
-                confirmVoteBtn.textContent = '✅ Głosuj';
+                confirmVoteBtn.textContent = '\u2705 G\u0142osuj';
                 voteStatus.textContent = '';
             }
         }
@@ -646,75 +650,42 @@
         participantCount.textContent = `${count} ${count === 1 ? 'osoba' : count < 5 ? 'osoby' : 'os\u00f3b'}`;
     }
 
-    function updateRevealButton(players) {
-        const votes = Object.values(players).filter(p => p.vote);
-        revealBtn.disabled = votes.length === 0;
-    }
-
     // --- RESULTS ---
     function showResults(room) {
         const players = room.players || {};
         resultsPanel.classList.remove('hidden');
 
-        const devVotesArr = [];
-        const qaVotesArr = [];
+        const devNums = [];
+        const qaNums = [];
         const allNumeric = [];
 
         Object.values(players).forEach(p => {
             if (!p.vote || p.vote === '') return;
-            const entry = { name: p.name, value: p.vote };
             const numVal = getNumericValue(p.vote);
+            if (numVal === undefined) return;
 
             if (p.role === 'dev') {
-                devVotesArr.push(entry);
-                if (numVal !== undefined) allNumeric.push(numVal);
+                devNums.push(numVal);
             } else if (p.role === 'qa') {
-                qaVotesArr.push(entry);
-                if (numVal !== undefined) allNumeric.push(numVal);
+                qaNums.push(numVal);
             } else {
-                // Others go to dev by default for summary
-                devVotesArr.push(entry);
-                if (numVal !== undefined) allNumeric.push(numVal);
+                devNums.push(numVal); // others count as dev
             }
+            allNumeric.push(numVal);
         });
 
-        // Render DEV votes
-        devVotes.innerHTML = devVotesArr.map(v =>
-            `<span class="vote-chip"><span class="vote-value">${escapeHtml(v.value)}</span> <span class="vote-name">${escapeHtml(firstName(v.name))}</span></span>`
-        ).join('');
+        const devAdj = applyMinDay(devNums);
+        const qaAdj = applyMinDay(qaNums);
+        const allAdj = applyMinDay(allNumeric);
 
-        // Render QA votes
-        qaVotes.innerHTML = qaVotesArr.map(v =>
-            `<span class="vote-chip"><span class="vote-value">${escapeHtml(v.value)}</span> <span class="vote-name">${escapeHtml(firstName(v.name))}</span></span>`
-        ).join('');
+        devSummary.textContent = devAdj.length > 0 ? sum(devAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
+        qaSummary.textContent = qaAdj.length > 0 ? sum(qaAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
+        resultTotal.textContent = allAdj.length > 0 ? sum(allAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
 
-        // Summaries
-        const devNumsRaw = devVotesArr.map(v => getNumericValue(v.value)).filter(n => n !== undefined);
-        const qaNumsRaw = qaVotesArr.map(v => getNumericValue(v.value)).filter(n => n !== undefined);
-        const devNums = applyMinDay(devNumsRaw);
-        const qaNums = applyMinDay(qaNumsRaw);
-
-        devSummary.textContent = devNums.length > 0
-            ? `\u03a3 ${sum(devNums).toFixed(1)} ${getUnitLabel()}`
-            : 'Brak g\u0142os\u00f3w';
-
-        qaSummary.textContent = qaNums.length > 0
-            ? `\u03a3 ${sum(qaNums).toFixed(1)} ${getUnitLabel()}`
-            : 'Brak g\u0142os\u00f3w';
-
-        // Total
-        const allNumericAdj = applyMinDay(allNumeric);
-        if (allNumericAdj.length > 0) {
-            const totalSum = sum(allNumericAdj).toFixed(1);
-            resultTotal.textContent = `\ud83d\udcca \u0141\u0105cznie: ${totalSum} ${getUnitLabel()}`;
-        } else {
-            resultTotal.textContent = 'Brak g\u0142os\u00f3w';
-        }
-
-        // Pre-fill final estimate with averages
+        // Pre-fill final estimate
         if (isModerator) {
-            finalDev.value = devNums.length > 0 ? Math.round(sum(devNums)) : '';
-            finalQa.value = qaNums.length > 0 ? Math.round(sum(qaNums)) : '';
+            finalDev.value = devAdj.length > 0 ? Math.round(sum(devAdj)) : '';
+            finalQa.value = qaAdj.length > 0 ? Math.round(sum(qaAdj)) : '';
         }
     }
 
@@ -814,6 +785,7 @@
         item.status = 'active';
 
         roomRef.update({ currentIssue: item.name, state: 'voting' });
+        roomRef.child('roundId').set(Date.now().toString(36));
         // Reset all votes
         roomRef.child('players').once('value', (snapshot) => {
             const updates = {};
@@ -857,10 +829,13 @@
 
             if (item.status === 'active') {
                 badgeHTML = '<span class="issue-badge issue-badge-active">G\u0142osowanie...</span>';
-                actionHTML = `<button class="btn btn-small btn-primary issue-action-btn" data-action="reveal" data-issue-id="${item.id}">\ud83d\udc41\ufe0f Odkryj</button>`;
+                actionHTML = `
+                    <button class="btn btn-small btn-primary issue-action-btn" data-action="reveal" data-issue-id="${item.id}">\ud83d\udc41\ufe0f Odkryj</button>
+                    <button class="btn btn-small btn-danger issue-action-btn" data-action="reset" data-issue-id="${item.id}">\ud83d\udd04 Reset</button>
+                `;
             } else if (item.status === 'done') {
                 badgeHTML = '<span class="issue-badge issue-badge-done">\u2713 Odkryte</span>';
-                actionHTML = '';
+                actionHTML = `<button class="btn btn-small btn-ghost issue-action-btn" data-action="reopen" data-issue-id="${item.id}">\ud83d\uddf3\ufe0f Wzn\u00f3w</button>`;
             } else {
                 badgeHTML = '';
                 actionHTML = `<button class="btn btn-small btn-secondary issue-action-btn" data-action="vote" data-issue-id="${item.id}">\ud83d\uddf3\ufe0f G\u0142osuj</button>`;
@@ -895,6 +870,7 @@
             roomRef.child('players').update(updates);
         });
         roomRef.update({ state: 'voting' });
+        roomRef.child('roundId').set(Date.now().toString(36));
         resultsPanel.classList.add('hidden');
         cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
         selectedCard = null;
@@ -942,8 +918,8 @@
             const room = snapshot.val();
             if (!room) return;
 
-            const today = new Date().toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const issue = room.currentIssue || `Refinement ${today}`;
+            const activeItem = issueList.find(i => i.status === 'active');
+            const issue = (activeItem && activeItem.name) || room.currentIssue || 'Zadanie';
 
             if (isNaN(devVal) && isNaN(qaVal)) {
                 if (!silent) showToast('Wpisz wycen\u0119!');
@@ -1040,7 +1016,7 @@
         sessionEstimates = [];
         isRevealed = false;
         selectedCard = null;
-        lastKnownIssue = '';
+        lastRoundId = '';
         issueList = [];
 
         gameSection.classList.add('hidden');
@@ -1127,6 +1103,16 @@
                 startVotingOnIssue(id);
             } else if (action === 'reveal') {
                 revealVotes();
+                // Update issue status
+                const item = issueList.find(i => i.id === id);
+                if (item) item.status = 'done';
+                roomRef.child('issueList').set(issueList);
+                renderIssueQueue();
+            } else if (action === 'reset') {
+                resetVotes();
+                roomRef.child('roundId').set(Date.now().toString(36));
+            } else if (action === 'reopen') {
+                startVotingOnIssue(id);
             }
             return;
         }
@@ -1149,7 +1135,7 @@
         sessionEstimates = [];
         isRevealed = false;
         selectedCard = null;
-        lastKnownIssue = '';
+        lastRoundId = '';
         issueList = [];
         isLeaving = false;
 
@@ -1175,9 +1161,6 @@
 
     confirmVoteBtn.addEventListener('click', confirmVote);
 
-    revealBtn.addEventListener('click', revealVotes);
-    resetVotesBtn.addEventListener('click', resetVotes);
-    nextRoundBtn.addEventListener('click', nextRound);
     saveFinalBtn.addEventListener('click', () => saveFinalEstimate(false));
     exportCsvBtn.addEventListener('click', exportCSV);
 

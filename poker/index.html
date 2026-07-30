@@ -98,6 +98,12 @@
                     <div class="issue-queue" id="issueQueue"></div>
             </div>
 
+            <!-- Current task banner -->
+            <div class="current-issue-banner hidden" id="currentIssueBanner">
+                <span class="banner-icon">🗳️</span>
+                <span class="banner-text" id="currentIssueName"></span>
+            </div>
+
             <!-- Voting cards -->
             <div class="cards-section" id="cardsSection">
                 <h3>Twoja wycena</h3>
@@ -126,44 +132,34 @@
                 </div>
             </div>
 
-            <!-- Moderator action buttons -->
-            <div class="moderator-actions hidden" id="moderatorActions">
-                <button class="btn btn-primary" id="revealBtn" disabled>👁️ Odkryj karty</button>
-                <button class="btn btn-danger btn-small" id="resetVotesBtn">🔄 Reset</button>
-                <button class="btn btn-secondary" id="nextRoundBtn">⏭️ Następne zadanie</button>
-            </div>
-
             <!-- Results panel (after reveal) -->
             <div class="results-panel hidden" id="resultsPanel">
-                <h3>📊 Wyniki głosowania</h3>
-                <div class="results-grid">
-                    <div class="result-group">
-                        <div class="result-group-header">🔧 DEV</div>
-                        <div class="result-votes" id="devVotes"></div>
-                        <div class="result-summary" id="devSummary"></div>
-                    </div>
-                    <div class="result-group">
-                        <div class="result-group-header">🧪 QA</div>
-                        <div class="result-votes" id="qaVotes"></div>
-                        <div class="result-summary" id="qaSummary"></div>
-                    </div>
-                </div>
-                <div class="result-total" id="resultTotal"></div>
-                <!-- Final estimate input (moderator) -->
-                <div class="final-estimate hidden" id="finalEstimate">
-                    <h4>Finalna wycena</h4>
-                    <div class="final-inputs">
-                        <div class="final-input-group">
-                            <label>DEV</label>
-                            <input type="number" id="finalDev" class="input input-small" step="0.5" min="0">
-                        </div>
-                        <div class="final-input-group">
-                            <label>QA</label>
-                            <input type="number" id="finalQa" class="input input-small" step="0.5" min="0">
-                        </div>
-                        <button class="btn btn-primary btn-small" id="saveFinalBtn">✅ Zapisz</button>
-                    </div>
-                </div>
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Σ głosów</th>
+                            <th class="final-col hidden" id="finalCol">Finalna wycena</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="result-label">🔧 DEV</td>
+                            <td id="devSummary">—</td>
+                            <td class="final-col hidden"><input type="number" id="finalDev" class="input input-small" step="0.5" min="0"></td>
+                        </tr>
+                        <tr>
+                            <td class="result-label">🧪 QA</td>
+                            <td id="qaSummary">—</td>
+                            <td class="final-col hidden"><input type="number" id="finalQa" class="input input-small" step="0.5" min="0"></td>
+                        </tr>
+                        <tr class="result-total-row">
+                            <td class="result-label"><strong>Łącznie</strong></td>
+                            <td id="resultTotal">—</td>
+                            <td class="final-col hidden"><button class="btn btn-primary btn-small" id="saveFinalBtn">✅ Zapisz</button></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <!-- Session summary -->

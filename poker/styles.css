@@ -306,6 +306,29 @@ select.input {
     flex: 1;
 }
 
+/* Current issue banner */
+.current-issue-banner {
+    background: linear-gradient(135deg, #170f4f, #2d1f7a);
+    color: var(--white);
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 700;
+    font-size: 1rem;
+    box-shadow: var(--shadow-md);
+}
+
+.banner-icon {
+    font-size: 1.2rem;
+}
+
+.banner-text {
+    flex: 1;
+}
+
 /* === CARDS === */
 .cards-section {
     background: var(--white);
@@ -328,13 +351,13 @@ select.input {
 .cards {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.3rem;
     justify-content: center;
 }
 
 .card {
-    width: 48px;
-    height: 68px;
+    width: 44px;
+    height: 62px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -514,6 +537,39 @@ select.input {
     color: var(--navy);
     margin-bottom: 1rem;
     text-align: center;
+}
+
+/* Results table */
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.results-table th,
+.results-table td {
+    padding: 0.6rem 1rem;
+    text-align: center;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.results-table th {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--navy-60);
+    text-transform: uppercase;
+}
+
+.results-table .result-label {
+    text-align: left;
+    font-weight: 600;
+    color: var(--navy);
+}
+
+.results-table .result-total-row td {
+    border-top: 2px solid var(--navy);
+    font-weight: 700;
+    padding-top: 0.75rem;
 }
 
 .results-grid {
