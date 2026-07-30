@@ -249,11 +249,11 @@ select.input {
 
 .room-code {
     font-family: monospace;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--navy-60);
-    background: var(--gray-100);
-    padding: 0.2rem 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--navy);
+    background: var(--cyan-20);
+    padding: 0.25rem 0.75rem;
     border-radius: 100px;
 }
 
@@ -326,14 +326,14 @@ select.input {
 }
 
 .card {
-    width: 56px;
-    height: 76px;
+    width: 48px;
+    height: 68px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 2px solid var(--gray-200);
     border-radius: var(--radius);
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--navy);
     background: var(--white);
@@ -640,91 +640,6 @@ select.input {
     color: var(--navy);
     font-size: 0.85rem;
     padding-top: 0.75rem;
-}
-
-/* === SESSION HISTORY === */
-.history-card {
-    background: var(--white);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    margin-top: 1.5rem;
-    box-shadow: var(--shadow-sm);
-}
-
-.history-card h3 {
-    font-size: 0.95rem;
-    color: var(--navy);
-    margin-bottom: 1rem;
-}
-
-.history-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: background 0.15s ease;
-    border-bottom: 1px solid var(--gray-100);
-}
-
-.history-row:last-child {
-    border-bottom: none;
-}
-
-.history-row:hover {
-    background: var(--cyan-bg);
-}
-
-.history-row-main {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-}
-
-.history-row-name {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--navy);
-}
-
-.history-row-meta {
-    font-size: 0.7rem;
-    color: var(--gray-400);
-}
-
-.history-row-stats {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-}
-
-.history-stat {
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: var(--gray-600);
-    padding: 0.15rem 0.5rem;
-    background: var(--gray-50);
-    border-radius: 100px;
-}
-
-.history-stat.total {
-    font-weight: 700;
-    color: var(--navy);
-    background: var(--cyan-20);
-}
-
-.history-detail h4 {
-    font-size: 0.9rem;
-    color: var(--navy);
-    margin: 0.75rem 0;
-}
-
-.empty-state {
-    color: var(--navy-60);
-    font-size: 0.85rem;
-    text-align: center;
-    padding: 1rem;
 }
 
 /* === FOOTER === */
