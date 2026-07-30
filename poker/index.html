@@ -89,19 +89,13 @@
                 </div>
             </div>
 
-            <!-- Current issue -->
-            <div class="issue-panel" id="issuePanel">
-                <div class="issue-display" id="issueDisplay">
-                    <p class="issue-placeholder">Moderator ustawi zadanie do wyceny...</p>
-                </div>
-                <!-- Moderator controls for issue -->
-                <div class="moderator-controls hidden" id="issueControls">
+            <!-- Issue controls (moderator only) -->
+            <div class="issue-panel hidden" id="issueControls">
                     <div class="issue-input-row">
                         <input type="text" id="issueInput" placeholder="Nazwa zadania / numer JIRA" class="input input-wide" autocomplete="off">
                         <button class="btn btn-primary btn-small" id="addIssueBtn">➕ Dodaj</button>
                     </div>
                     <div class="issue-queue" id="issueQueue"></div>
-                </div>
             </div>
 
             <!-- Voting cards -->
@@ -203,6 +197,37 @@
         <footer class="footer">
             <p>ALFinator Poker · MD: 1h–10d · SP: Fibonacci 1–21</p>
         </footer>
+
+        <!-- History detail popup -->
+        <div class="history-popup-overlay hidden" id="historyPopupOverlay">
+            <div class="history-popup">
+                <div class="history-popup-header">
+                    <h3 id="historyPopupTitle">Podsumowanie sesji</h3>
+                    <button class="btn btn-ghost btn-small" id="closeHistoryPopup">✕</button>
+                </div>
+                <div class="history-popup-body">
+                    <table class="summary-table" id="historyPopupTable">
+                        <thead>
+                            <tr>
+                                <th>Zadanie</th>
+                                <th>DEV</th>
+                                <th>QA</th>
+                                <th>Suma</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyPopupBody"></tbody>
+                        <tfoot>
+                            <tr class="summary-total-row">
+                                <td><strong>RAZEM</strong></td>
+                                <td id="historyTotalDev">—</td>
+                                <td id="historyTotalQa">—</td>
+                                <td id="historyTotalAll">—</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
 
         <!-- Emoji picker popup -->
         <div class="emoji-popup hidden" id="emojiPopup">

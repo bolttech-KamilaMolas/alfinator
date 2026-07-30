@@ -57,7 +57,6 @@
     const copyRoomBtn = document.getElementById('copyRoomBtn');
     const leaveRoomBtn = document.getElementById('leaveRoomBtn');
     const participantCount = document.getElementById('participantCount');
-    const issueDisplay = document.getElementById('issueDisplay');
     const issueControls = document.getElementById('issueControls');
     const issueInput = document.getElementById('issueInput');
     const addIssueBtn = document.getElementById('addIssueBtn');
@@ -96,6 +95,13 @@
     const roomsListSection = document.getElementById('roomsListSection');
     const activeRoomsList = document.getElementById('activeRoomsList');
     const historyRoomsList = document.getElementById('historyRoomsList');
+    const historyPopupOverlay = document.getElementById('historyPopupOverlay');
+    const historyPopupTitle = document.getElementById('historyPopupTitle');
+    const historyPopupBody = document.getElementById('historyPopupBody');
+    const historyTotalDev = document.getElementById('historyTotalDev');
+    const historyTotalQa = document.getElementById('historyTotalQa');
+    const historyTotalAll = document.getElementById('historyTotalAll');
+    const closeHistoryPopup = document.getElementById('closeHistoryPopup');
 
     // --- UTILITIES ---
     function generateRoomCode() {
@@ -212,7 +218,7 @@
                     const summaryText = estimates.length > 0 ? `${estimates.length} zada\u0144 \u00b7 DEV: ${totalDev} MD \u00b7 QA: ${totalQa} MD` : 'Brak wycen';
 
                     return `
-                        <div class="room-item">
+                        <div class="room-item room-item-clickable" data-history-code="${r.code}">
                             <div class="room-item-info">
                                 <span class="room-item-name">${escapeHtml(r.room.name || 'Refinement ' + r.dateStr.split(',')[0])}</span>
                                 <span class="room-item-meta">Moderator: ${escapeHtml(firstName(r.room.moderator || ''))}</span>
@@ -226,6 +232,29 @@
                 historyRoomsList.innerHTML = '<p class="empty-state">Brak historii</p>';
             }
         });
+    }
+
+    function showHistoryPopup(room) {
+        const estimates = room.estimates ? Object.values(room.estimates) : [];
+        const title = room.name || 'Sesja';
+
+        historyPopupTitle.textContent = title;
+        historyPopupBody.innerHTML = estimates.map(est => `
+            <tr>
+                <td>${escapeHtml(est.issue || '\u2014')}</td>
+                <td>${est.dev != null ? est.dev + ' MD' : '\u2014'}</td>
+                <td>${est.qa != null ? est.qa + ' MD' : '\u2014'}</td>
+                <td><strong>${((parseFloat(est.dev) || 0) + (parseFloat(est.qa) || 0)) || '\u2014'} MD</strong></td>
+            </tr>
+        `).join('');
+
+        const sumDev = estimates.reduce((s, e) => s + (parseFloat(e.dev) || 0), 0);
+        const sumQa = estimates.reduce((s, e) => s + (parseFloat(e.qa) || 0), 0);
+        historyTotalDev.textContent = sumDev + ' MD';
+        historyTotalQa.textContent = sumQa + ' MD';
+        historyTotalAll.textContent = (sumDev + sumQa) + ' MD';
+
+        historyPopupOverlay.classList.remove('hidden');
     }
 
     function showToast(message) {
@@ -481,13 +510,6 @@
             roomCodeDisplay.textContent = room.name;
         }
 
-        // Update issue display
-        if (room.currentIssue) {
-            issueDisplay.innerHTML = `<h3>${escapeHtml(room.currentIssue)}</h3>`;
-        } else {
-            issueDisplay.innerHTML = '<p class="issue-placeholder">Moderator ustawi zadanie do wyceny...</p>';
-        }
-
         // Update unit from room
         if (room.unit && room.unit !== currentUnit) {
             currentUnit = room.unit;
@@ -673,31 +695,35 @@
         const qaNums = applyMinDay(qaNumsRaw);
 
         devSummary.textContent = devNums.length > 0
-            ? `\u00d8 ${avg(devNums).toFixed(1)} ${getUnitLabel()} (${devNums.length} g\u0142os\u00f3w)`
-            : 'Brak g\u0142os\u00f3w numerycznych';
+            ? `\u03a3 ${sum(devNums).toFixed(1)} ${getUnitLabel()}`
+            : 'Brak g\u0142os\u00f3w';
 
         qaSummary.textContent = qaNums.length > 0
-            ? `\u00d8 ${avg(qaNums).toFixed(1)} ${getUnitLabel()} (${qaNums.length} g\u0142os\u00f3w)`
-            : 'Brak g\u0142os\u00f3w numerycznych';
+            ? `\u03a3 ${sum(qaNums).toFixed(1)} ${getUnitLabel()}`
+            : 'Brak g\u0142os\u00f3w';
 
         // Total
         const allNumericAdj = applyMinDay(allNumeric);
         if (allNumericAdj.length > 0) {
-            const totalAvg = avg(allNumericAdj).toFixed(1);
-            resultTotal.textContent = `\ud83d\udcca \u0141\u0105cznie: \u00d8 ${totalAvg} ${getUnitLabel()} (${allNumericAdj.length} g\u0142os\u00f3w)`;
+            const totalSum = sum(allNumericAdj).toFixed(1);
+            resultTotal.textContent = `\ud83d\udcca \u0141\u0105cznie: ${totalSum} ${getUnitLabel()}`;
         } else {
-            resultTotal.textContent = 'Brak g\u0142os\u00f3w numerycznych';
+            resultTotal.textContent = 'Brak g\u0142os\u00f3w';
         }
 
         // Pre-fill final estimate with averages
         if (isModerator) {
-            finalDev.value = devNums.length > 0 ? Math.round(avg(devNums)) : '';
-            finalQa.value = qaNums.length > 0 ? Math.round(avg(qaNums)) : '';
+            finalDev.value = devNums.length > 0 ? Math.round(sum(devNums)) : '';
+            finalQa.value = qaNums.length > 0 ? Math.round(sum(qaNums)) : '';
         }
     }
 
     function avg(arr) {
         return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    function sum(arr) {
+        return arr.reduce((a, b) => a + b, 0);
     }
 
     function median(arr) {
@@ -825,10 +851,31 @@
         issueQueue.innerHTML = issueList.map(item => {
             const activeClass = item.status === 'active' ? ' active' : '';
             const doneClass = item.status === 'done' ? ' done' : '';
+
+            let badgeHTML = '';
+            let actionHTML = '';
+
+            if (item.status === 'active') {
+                badgeHTML = '<span class="issue-badge issue-badge-active">G\u0142osowanie...</span>';
+                actionHTML = `<button class="btn btn-small btn-primary issue-action-btn" data-action="reveal" data-issue-id="${item.id}">\ud83d\udc41\ufe0f Odkryj</button>`;
+            } else if (item.status === 'done') {
+                badgeHTML = '<span class="issue-badge issue-badge-done">\u2713 Odkryte</span>';
+                actionHTML = '';
+            } else {
+                badgeHTML = '';
+                actionHTML = `<button class="btn btn-small btn-secondary issue-action-btn" data-action="vote" data-issue-id="${item.id}">\ud83d\uddf3\ufe0f G\u0142osuj</button>`;
+            }
+
             return `
                 <div class="issue-queue-item${activeClass}${doneClass}" data-issue-id="${item.id}">
-                    <span class="issue-queue-item-name">${escapeHtml(item.name)}</span>
-                    <button class="issue-queue-item-delete" data-delete-id="${item.id}" title="Usuń">✕</button>
+                    <div class="issue-queue-item-top">
+                        <span class="issue-queue-item-name">${escapeHtml(item.name)}</span>
+                        ${badgeHTML}
+                        <button class="issue-queue-item-delete" data-delete-id="${item.id}" title="Usu\u0144">\u2715</button>
+                    </div>
+                    <div class="issue-queue-item-actions">
+                        ${actionHTML}
+                    </div>
                 </div>
             `;
         }).join('');
@@ -991,10 +1038,23 @@
         currentPlayer = null;
         isModerator = false;
         sessionEstimates = [];
+        isRevealed = false;
+        selectedCard = null;
+        lastKnownIssue = '';
+        issueList = [];
 
         gameSection.classList.add('hidden');
         lobbySection.classList.remove('hidden');
         roomsListSection.classList.remove('hidden');
+
+        // Reset lobby to full mode (not join-only)
+        document.getElementById('createRoomOption').style.display = '';
+        document.getElementById('lobbyDivider').style.display = '';
+        document.querySelector('.lobby-options').classList.remove('join-only');
+        roomCodeInput.style.display = '';
+        roomCodeInput.value = '';
+        // Clear URL ?room= parameter
+        window.history.replaceState({}, '', window.location.pathname);
 
         localStorage.removeItem('poker-room');
         localStorage.removeItem('poker-player');
@@ -1058,9 +1118,17 @@
             removeIssue(deleteBtn.dataset.deleteId);
             return;
         }
-        const queueItem = e.target.closest('.issue-queue-item');
-        if (queueItem && !queueItem.classList.contains('done')) {
-            startVotingOnIssue(queueItem.dataset.issueId);
+        const actionBtn = e.target.closest('.issue-action-btn');
+        if (actionBtn) {
+            e.stopPropagation();
+            const action = actionBtn.dataset.action;
+            const id = actionBtn.dataset.issueId;
+            if (action === 'vote') {
+                startVotingOnIssue(id);
+            } else if (action === 'reveal') {
+                revealVotes();
+            }
+            return;
         }
     });
 
@@ -1079,11 +1147,24 @@
         currentPlayer = null;
         isModerator = false;
         sessionEstimates = [];
+        isRevealed = false;
+        selectedCard = null;
+        lastKnownIssue = '';
+        issueList = [];
         isLeaving = false;
 
         gameSection.classList.add('hidden');
         lobbySection.classList.remove('hidden');
         roomsListSection.classList.remove('hidden');
+
+        // Reset lobby to full mode (not join-only)
+        document.getElementById('createRoomOption').style.display = '';
+        document.getElementById('lobbyDivider').style.display = '';
+        document.querySelector('.lobby-options').classList.remove('join-only');
+        roomCodeInput.style.display = '';
+        roomCodeInput.value = '';
+        // Clear URL ?room= parameter
+        window.history.replaceState({}, '', window.location.pathname);
 
         localStorage.removeItem('poker-room');
         localStorage.removeItem('poker-player');
@@ -1171,6 +1252,31 @@
         showToast('Wybierz siebie i dołącz!');
         // Scroll to lobby
         lobbySection.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // Click history room to show popup
+    historyRoomsList.addEventListener('click', (e) => {
+        const roomItem = e.target.closest('.room-item-clickable');
+        if (!roomItem) return;
+        const code = roomItem.dataset.historyCode;
+        if (!code) return;
+        // Fetch room data from Firebase
+        db.ref('poker_rooms/' + code).once('value', (snapshot) => {
+            if (snapshot.exists()) {
+                showHistoryPopup(snapshot.val());
+            }
+        });
+    });
+
+    // Close history popup
+    closeHistoryPopup.addEventListener('click', () => {
+        historyPopupOverlay.classList.add('hidden');
+    });
+
+    historyPopupOverlay.addEventListener('click', (e) => {
+        if (e.target === historyPopupOverlay) {
+            historyPopupOverlay.classList.add('hidden');
+        }
     });
 
     // --- INIT ---

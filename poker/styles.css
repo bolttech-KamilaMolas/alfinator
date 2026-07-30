@@ -959,20 +959,13 @@ select.input {
 
 .issue-queue-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0.75rem;
+    flex-direction: column;
+    padding: 0.6rem 0.75rem;
     background: var(--gray-50);
     border: 1px solid var(--gray-200);
     border-radius: var(--radius);
     font-size: 0.8rem;
-    cursor: pointer;
     transition: all 0.15s ease;
-}
-
-.issue-queue-item:hover {
-    border-color: var(--cyan);
-    background: var(--cyan-bg);
 }
 
 .issue-queue-item.active {
@@ -1005,4 +998,86 @@ select.input {
 
 .issue-queue-item-delete:hover {
     color: var(--danger);
+}
+
+.issue-queue-item-top {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.issue-queue-item-actions {
+    margin-top: 0.4rem;
+}
+
+.issue-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 100px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.issue-badge-active {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.issue-badge-done {
+    background: var(--success-light);
+    color: var(--success);
+}
+
+.issue-action-btn {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.6rem !important;
+}
+
+
+/* History popup */
+.history-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.history-popup {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+}
+
+.history-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.history-popup-header h3 {
+    font-size: 1rem;
+    color: var(--navy);
+}
+
+.room-item-clickable {
+    cursor: pointer;
+}
+
+.room-item-clickable:hover {
+    border-color: var(--cyan-60);
+    background: var(--cyan-bg);
 }
