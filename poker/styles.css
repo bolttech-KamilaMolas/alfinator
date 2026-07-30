@@ -199,6 +199,12 @@ select.input {
     align-items: start;
 }
 
+.lobby-options:has(> .hidden:first-child) {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
 .lobby-option {
     text-align: center;
 }

@@ -34,7 +34,7 @@
             <div class="lobby-card">
                 <h2>🎮 Rozpocznij sesję</h2>
                 <div class="lobby-options">
-                    <div class="lobby-option">
+                    <div class="lobby-option" id="createRoomOption">
                         <h3>Stwórz pokój</h3>
                         <p>Jako moderator — zarządzaj głosowaniami</p>
                         <select id="moderatorName" class="input">
@@ -42,15 +42,15 @@
                         </select>
                         <button class="btn btn-primary" id="createRoomBtn">🚀 Stwórz pokój</button>
                     </div>
-                    <div class="lobby-divider">lub</div>
-                    <div class="lobby-option">
+                    <div class="lobby-divider" id="lobbyDivider">lub</div>
+                    <div class="lobby-option" id="joinRoomOption">
                         <h3>Dołącz do pokoju</h3>
-                        <p>Wpisz kod pokoju od moderatora</p>
+                        <p>Wybierz siebie i dołącz do głosowania</p>
                         <input type="text" id="roomCodeInput" placeholder="Kod pokoju" class="input" autocomplete="off">
                         <select id="playerName" class="input">
                             <option value="" disabled selected>Wybierz siebie...</option>
                         </select>
-                        <button class="btn btn-secondary" id="joinRoomBtn">🎯 Dołącz</button>
+                        <button class="btn btn-primary" id="joinRoomBtn">🎯 Dołącz do głosowania</button>
                     </div>
                 </div>
             </div>

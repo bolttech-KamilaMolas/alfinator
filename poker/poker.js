@@ -836,7 +836,17 @@
         // Check URL for room code
         const urlRoom = getRoomFromURL();
         if (urlRoom) {
+            // Joining mode — hide create option, show only join
+            const createOption = document.getElementById('createRoomOption');
+            const lobbyDivider = document.getElementById('lobbyDivider');
+            createOption.classList.add('hidden');
+            lobbyDivider.classList.add('hidden');
+
+            // Pre-fill room code and make it read-only
             roomCodeInput.value = urlRoom;
+            roomCodeInput.readOnly = true;
+            roomCodeInput.style.opacity = '0.6';
+
             playerName.focus();
         }
 
