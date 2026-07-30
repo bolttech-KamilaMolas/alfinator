@@ -448,7 +448,6 @@
 
         if (isModerator) {
             issueControls.classList.remove('hidden');
-            document.querySelectorAll('.final-col').forEach(el => el.classList.remove('hidden'));
         }
 
         renderCards();
@@ -514,6 +513,14 @@
             currentIssueName.textContent = '';
         }
 
+        // Disable cards when no task is active
+        if (!room.currentIssue) {
+            cardsDeck.querySelectorAll('.card').forEach(c => c.classList.add('disabled'));
+            confirmVoteBtn.disabled = true;
+        } else if (room.state !== 'revealed') {
+            cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('disabled'));
+        }
+
         // Update unit from room
         if (room.unit && room.unit !== currentUnit) {
             currentUnit = room.unit;
@@ -531,6 +538,8 @@
         } else {
             isRevealed = false;
             resultsPanel.classList.add('hidden');
+            // Hide final estimate inputs during voting
+            document.querySelectorAll('.final-col').forEach(el => el.classList.add('hidden'));
             cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('disabled'));
             // Re-render players to hide votes
             if (room.players) renderPlayers(room.players);
@@ -542,7 +551,7 @@
                 cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
                 selectedCard = null;
                 confirmVoteBtn.disabled = true;
-                confirmVoteBtn.textContent = '\u2705 G\u0142osuj';
+                confirmVoteBtn.textContent = 'G\u0142osuj';
                 voteStatus.textContent = '';
             }
         }
@@ -554,9 +563,9 @@
         }
 
         // Sync issue list from room
-        if (room.issueList && isModerator) {
-            issueList = room.issueList;
-            renderIssueQueue();
+        if (room.issueList) {
+            issueList = Array.isArray(room.issueList) ? room.issueList : Object.values(room.issueList);
+            if (isModerator) renderIssueQueue();
         }
     }
 
@@ -584,7 +593,7 @@
 
         selectedCard = value;
         confirmVoteBtn.disabled = false;
-        confirmVoteBtn.textContent = voteStatus.textContent ? '🔄 Zmień głos' : '✅ Głosuj';
+        confirmVoteBtn.textContent = voteStatus.textContent ? 'Zmień głos' : 'Głosuj';
         voteStatus.textContent = '';
     }
 
@@ -593,7 +602,7 @@
         const playerKey = sanitizeKey(currentPlayer.name);
         roomRef.child('players/' + playerKey + '/vote').set(selectedCard);
         confirmVoteBtn.disabled = true;
-        confirmVoteBtn.textContent = '✅ Głosuj';
+        confirmVoteBtn.textContent = 'Głosuj';
         voteStatus.textContent = '\u2713 Zagłosowano: ' + selectedCard;
         showToast('Głos oddany: ' + selectedCard);
     }
@@ -687,6 +696,9 @@
             finalDev.value = devAdj.length > 0 ? Math.round(sum(devAdj)) : '';
             finalQa.value = qaAdj.length > 0 ? Math.round(sum(qaAdj)) : '';
         }
+
+        // Show final estimate inputs for everyone after reveal
+        document.querySelectorAll('.final-col').forEach(el => el.classList.remove('hidden'));
     }
 
     function avg(arr) {
@@ -769,9 +781,15 @@
         const id = Date.now().toString(36);
         issueList.push({ id, name: issue, status: 'pending' });
         issueInput.value = '';
-        renderIssueQueue();
-        // Sync to Firebase
-        roomRef.child('issueList').set(issueList);
+
+        // Auto-activate if no task is currently active
+        const hasActive = issueList.some(i => i.status === 'active');
+        if (!hasActive) {
+            startVotingOnIssue(id);
+        } else {
+            renderIssueQueue();
+            roomRef.child('issueList').set(issueList);
+        }
     }
 
     function startVotingOnIssue(id) {
@@ -875,7 +893,7 @@
         cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
         selectedCard = null;
         confirmVoteBtn.disabled = true;
-        confirmVoteBtn.textContent = '✅ Głosuj';
+        confirmVoteBtn.textContent = 'Głosuj';
         voteStatus.textContent = '';
         showToast('Głosowanie zresetowane');
     }
@@ -1102,12 +1120,13 @@
             if (action === 'vote') {
                 startVotingOnIssue(id);
             } else if (action === 'reveal') {
-                revealVotes();
-                // Update issue status
+                // Update issue status to done
                 const item = issueList.find(i => i.id === id);
                 if (item) item.status = 'done';
-                roomRef.child('issueList').set(issueList);
                 renderIssueQueue();
+                roomRef.child('issueList').set(issueList);
+                // Then reveal votes
+                revealVotes();
             } else if (action === 'reset') {
                 resetVotes();
                 roomRef.child('roundId').set(Date.now().toString(36));
