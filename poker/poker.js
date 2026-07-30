@@ -533,6 +533,14 @@
             isRevealed = true;
             showResults(room);
             cardsDeck.querySelectorAll('.card').forEach(c => c.classList.add('disabled'));
+            // Check if estimate already saved (global lock)
+            if (room.estimateSaved) {
+                saveFinalBtn.disabled = true;
+                saveFinalBtn.textContent = '\u2713 Zapisano';
+            } else {
+                saveFinalBtn.disabled = false;
+                saveFinalBtn.textContent = '\u2705 Zapisz';
+            }
             // Re-render players to show their votes
             if (room.players) renderPlayers(room.players);
         } else {
@@ -541,6 +549,9 @@
             // Hide final estimate inputs during voting
             document.querySelectorAll('.final-col').forEach(el => el.classList.add('hidden'));
             cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('disabled'));
+            // Reset save button for next round
+            saveFinalBtn.disabled = false;
+            saveFinalBtn.textContent = '\u2705 Zapisz';
             // Re-render players to hide votes
             if (room.players) renderPlayers(room.players);
 
@@ -564,7 +575,9 @@
 
         // Sync issue list from room
         if (room.issueList) {
-            issueList = Array.isArray(room.issueList) ? room.issueList : Object.values(room.issueList);
+            const rawList = Array.isArray(room.issueList) ? room.issueList : Object.values(room.issueList);
+            // Only accept valid entries with id and name
+            issueList = rawList.filter(item => item && item.id && item.name);
             if (isModerator) renderIssueQueue();
         }
     }
@@ -691,11 +704,9 @@
         qaSummary.textContent = qaAdj.length > 0 ? sum(qaAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
         resultTotal.textContent = allAdj.length > 0 ? sum(allAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
 
-        // Pre-fill final estimate
-        if (isModerator) {
-            finalDev.value = devAdj.length > 0 ? Math.round(sum(devAdj)) : '';
-            finalQa.value = qaAdj.length > 0 ? Math.round(sum(qaAdj)) : '';
-        }
+        // Pre-fill final estimate for everyone
+        finalDev.value = devAdj.length > 0 ? Math.round(sum(devAdj)) : '';
+        finalQa.value = qaAdj.length > 0 ? Math.round(sum(qaAdj)) : '';
 
         // Show final estimate inputs for everyone after reveal
         document.querySelectorAll('.final-col').forEach(el => el.classList.remove('hidden'));
@@ -803,6 +814,7 @@
         item.status = 'active';
 
         roomRef.update({ currentIssue: item.name, state: 'voting' });
+        roomRef.child('estimateSaved').set(false);
         roomRef.child('roundId').set(Date.now().toString(36));
         // Reset all votes
         roomRef.child('players').once('value', (snapshot) => {
@@ -953,7 +965,13 @@
             };
 
             roomRef.child('estimates').push(estimate);
-            if (!silent) showToast('\u2705 Zapisano wycen\u0119!');
+            // Lock saving globally
+            roomRef.child('estimateSaved').set(true);
+            if (!silent) {
+                showToast('\u2705 Zapisano wycen\u0119!');
+                saveFinalBtn.disabled = true;
+                saveFinalBtn.textContent = '\u2713 Zapisano';
+            }
         });
     }
 
@@ -1131,6 +1149,18 @@
                 resetVotes();
                 roomRef.child('roundId').set(Date.now().toString(36));
             } else if (action === 'reopen') {
+                // Remove previous estimate for this task
+                const item = issueList.find(i => i.id === id);
+                if (item && item.name) {
+                    roomRef.child('estimates').once('value', (snapshot) => {
+                        snapshot.forEach(child => {
+                            const est = child.val();
+                            if (est && est.issue === item.name) {
+                                child.ref.remove();
+                            }
+                        });
+                    });
+                }
                 startVotingOnIssue(id);
             }
             return;
