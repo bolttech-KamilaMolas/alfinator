@@ -199,7 +199,7 @@ select.input {
     align-items: start;
 }
 
-.lobby-options:has(> .hidden:first-child) {
+.lobby-options.join-only {
     grid-template-columns: 1fr;
     max-width: 400px;
     margin: 0 auto;
@@ -365,6 +365,44 @@ select.input {
 .card.disabled {
     opacity: 0.4;
     pointer-events: none;
+}
+
+/* Vote action button */
+.vote-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--gray-100);
+}
+
+.btn-vote {
+    background: var(--navy);
+    color: var(--white);
+    font-size: 0.95rem;
+    padding: 0.7rem 2rem;
+    border-radius: 100px;
+    box-shadow: 0 4px 14px rgba(23, 15, 79, 0.3);
+}
+
+.btn-vote:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(23, 15, 79, 0.4);
+}
+
+.btn-vote:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.vote-status {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--success);
 }
 
 /* === PLAYERS PANEL === */

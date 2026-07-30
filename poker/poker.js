@@ -21,9 +21,9 @@
     // --- CONFIG ---
     const EXCEL_URL = 'https://bolttech-kamilamolas.github.io/alfinator/data/capacity.xlsx';
     const FIBONACCI = ['1', '2', '3', '5', '8', '13', '21', '?', '\u2615'];
-    const MD_DECK = ['2h', '4h', '6h', '1d', '2d', '3d', '4d', '5d', '6d', '7d', '8d', '9d', '10d', '10+'];
+    const MD_DECK = ['1h', '2h', '4h', '6h', '1d', '2d', '3d', '4d', '5d', '6d', '7d', '8d', '9d', '10d', '10+'];
     const NUMERIC_VALUES_SP = { '1': 1, '2': 2, '3': 3, '5': 5, '8': 8, '13': 13, '21': 21 };
-    const NUMERIC_VALUES_MD = { '2h': 0.25, '4h': 0.5, '6h': 0.75, '1d': 1, '2d': 2, '3d': 3, '4d': 4, '5d': 5, '6d': 6, '7d': 7, '8d': 8, '9d': 9, '10d': 10, '10+': 11 };
+    const NUMERIC_VALUES_MD = { '1h': 0.125, '2h': 0.25, '4h': 0.5, '6h': 0.75, '1d': 1, '2d': 2, '3d': 3, '4d': 4, '5d': 5, '6d': 6, '7d': 7, '8d': 8, '9d': 9, '10d': 10, '10+': 11 };
 
     // Skillset classification
     const DEV_SKILLSETS = ['BE Developer', 'FE Developer'];
@@ -39,6 +39,7 @@
     let currentUnit = 'md';
     let sessionEstimates = []; // { issue, devEstimate, qaEstimate }
     let isLeaving = false;
+    let selectedCard = null;
 
     // --- DOM REFS ---
     const lobbySection = document.getElementById('lobbySection');
@@ -58,6 +59,8 @@
     const setIssueBtn = document.getElementById('setIssueBtn');
     const cardsSection = document.getElementById('cardsSection');
     const cardsDeck = document.getElementById('cardsDeck');
+    const confirmVoteBtn = document.getElementById('confirmVoteBtn');
+    const voteStatus = document.getElementById('voteStatus');
     const devPlayersList = document.getElementById('devPlayersList');
     const qaPlayersList = document.getElementById('qaPlayersList');
     const otherPlayersList = document.getElementById('otherPlayersList');
@@ -387,6 +390,10 @@
         } else {
             resultsPanel.classList.add('hidden');
             cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('disabled'));
+            // Reset vote button for new round
+            selectedCard = null;
+            confirmVoteBtn.disabled = true;
+            voteStatus.textContent = '';
         }
 
         // Update session estimates for summary
@@ -418,9 +425,18 @@
         cardEl.classList.add('pulse');
         setTimeout(() => cardEl.classList.remove('pulse'), 600);
 
-        // Send vote to Firebase
+        selectedCard = value;
+        confirmVoteBtn.disabled = false;
+        voteStatus.textContent = '';
+    }
+
+    function confirmVote() {
+        if (!selectedCard) return;
         const playerKey = sanitizeKey(currentPlayer.name);
-        roomRef.child('players/' + playerKey + '/vote').set(value);
+        roomRef.child('players/' + playerKey + '/vote').set(selectedCard);
+        confirmVoteBtn.disabled = true;
+        voteStatus.textContent = '\u2713 Zagłosowano: ' + selectedCard;
+        showToast('Głos oddany: ' + selectedCard);
     }
 
     function renderPlayers(players) {
@@ -602,6 +618,9 @@
         // Reset card selection locally
         cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
         resultsPanel.classList.add('hidden');
+        selectedCard = null;
+        confirmVoteBtn.disabled = true;
+        voteStatus.textContent = '';
     }
 
     function revealVotes() {
@@ -814,6 +833,8 @@
         showToast('Opuściłeś pokój');
     });
 
+    confirmVoteBtn.addEventListener('click', confirmVote);
+
     revealBtn.addEventListener('click', revealVotes);
     nextRoundBtn.addEventListener('click', nextRound);
     saveFinalBtn.addEventListener('click', () => saveFinalEstimate(false));
@@ -837,24 +858,39 @@
         const urlRoom = getRoomFromURL();
         if (urlRoom) {
             // Joining mode — hide create option, show only join
-            const createOption = document.getElementById('createRoomOption');
-            const lobbyDivider = document.getElementById('lobbyDivider');
-            createOption.classList.add('hidden');
-            lobbyDivider.classList.add('hidden');
+            document.getElementById('createRoomOption').style.display = 'none';
+            document.getElementById('lobbyDivider').style.display = 'none';
+            document.querySelector('.lobby-options').classList.add('join-only');
 
             // Pre-fill room code and make it read-only
             roomCodeInput.value = urlRoom;
             roomCodeInput.readOnly = true;
-            roomCodeInput.style.opacity = '0.6';
+            roomCodeInput.style.display = 'none'; // hide code input entirely — it's in the URL
 
             playerName.focus();
         }
 
-        // Try to reconnect to previous room
+        // If URL has room and user was previously in this room, auto-reconnect
         const savedRoom = localStorage.getItem('poker-room');
         const savedPlayer = localStorage.getItem('poker-player');
         const savedMod = localStorage.getItem('poker-moderator');
 
+        if (urlRoom && savedRoom === urlRoom.toUpperCase() && savedPlayer) {
+            const snapshot = await db.ref('poker_rooms/' + urlRoom.toUpperCase()).once('value');
+            if (snapshot.exists()) {
+                const wasMod = savedMod === '1';
+                currentUnit = snapshot.val().unit || 'md';
+                updateUnitToggleUI();
+                currentRoom = urlRoom.toUpperCase();
+                currentPlayer = { name: savedPlayer, role: classifySkillset(''), moderator: wasMod };
+                isModerator = wasMod;
+                roomRef = db.ref('poker_rooms/' + currentRoom);
+                enterRoom();
+                return;
+            }
+        }
+
+        // Try to reconnect to previous room (only if no URL room)
         if (savedRoom && savedPlayer && !urlRoom) {
             // Verify room still exists
             const snapshot = await db.ref('poker_rooms/' + savedRoom).once('value');
