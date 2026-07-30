@@ -89,6 +89,9 @@
     const unitToggle = document.getElementById('unitToggle');
     const emojiPopup = document.getElementById('emojiPopup');
     const emojiPicker = document.getElementById('emojiPicker');
+    const roomsListSection = document.getElementById('roomsListSection');
+    const activeRoomsList = document.getElementById('activeRoomsList');
+    const historyRoomsList = document.getElementById('historyRoomsList');
 
     // --- UTILITIES ---
     function generateRoomCode() {
@@ -150,6 +153,73 @@
                     group.appendChild(opt);
                 });
                 select.appendChild(group);
+            }
+        });
+    }
+
+    function loadRoomsList() {
+        db.ref('poker_rooms').orderByChild('created').on('value', (snapshot) => {
+            const rooms = snapshot.val() || {};
+            const activeRooms = [];
+            const historyRoomsArr = [];
+
+            Object.entries(rooms).forEach(([code, room]) => {
+                const playerCount = room.players ? Object.keys(room.players).length : 0;
+                const estimateCount = room.estimates ? Object.keys(room.estimates).length : 0;
+                const created = new Date(room.created);
+                const dateStr = created.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                const entry = { code, room, playerCount, estimateCount, dateStr, created };
+
+                // Active = has players connected
+                if (playerCount > 0) {
+                    activeRooms.push(entry);
+                } else if (estimateCount > 0) {
+                    historyRoomsArr.push(entry);
+                }
+            });
+
+            // Sort: newest first
+            activeRooms.sort((a, b) => b.created - a.created);
+            historyRoomsArr.sort((a, b) => b.created - a.created);
+
+            // Render active
+            if (activeRooms.length > 0) {
+                activeRoomsList.innerHTML = activeRooms.map(r => `
+                    <div class="room-item active" data-room-code="${r.code}">
+                        <div class="room-item-info">
+                            <span class="room-item-name">${escapeHtml(r.room.currentIssue || 'Refinement')} <span style="opacity:0.5">[${r.code}]</span></span>
+                            <span class="room-item-meta">${r.dateStr} \u00b7 ${r.playerCount} ${r.playerCount === 1 ? 'osoba' : 'os\u00f3b'} \u00b7 Moderator: ${escapeHtml(firstName(r.room.moderator || ''))}</span>
+                        </div>
+                        <span class="room-item-badge live">LIVE</span>
+                    </div>
+                `).join('');
+            } else {
+                activeRoomsList.innerHTML = '<p class="empty-state">Brak aktywnych pokoi</p>';
+            }
+
+            // Render history (last 10)
+            const historySlice = historyRoomsArr.slice(0, 10);
+            if (historySlice.length > 0) {
+                historyRoomsList.innerHTML = historySlice.map(r => {
+                    const estimates = r.room.estimates ? Object.values(r.room.estimates) : [];
+                    const totalDev = estimates.reduce((s, e) => s + (parseFloat(e.dev) || 0), 0);
+                    const totalQa = estimates.reduce((s, e) => s + (parseFloat(e.qa) || 0), 0);
+                    const summaryText = estimates.length > 0 ? `${estimates.length} zada\u0144 \u00b7 DEV: ${totalDev} MD \u00b7 QA: ${totalQa} MD` : 'Brak wycen';
+
+                    return `
+                        <div class="room-item">
+                            <div class="room-item-info">
+                                <span class="room-item-name">Refinement ${r.dateStr.split(',')[0]}</span>
+                                <span class="room-item-meta">Moderator: ${escapeHtml(firstName(r.room.moderator || ''))}</span>
+                                <span class="room-item-summary">${summaryText}</span>
+                            </div>
+                            <span class="room-item-badge ended">Zako\u0144czone</span>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                historyRoomsList.innerHTML = '<p class="empty-state">Brak historii</p>';
             }
         });
     }
@@ -340,6 +410,7 @@
     function enterRoom() {
         lobbySection.classList.add('hidden');
         gameSection.classList.remove('hidden');
+        roomsListSection.classList.add('hidden');
 
         roomCodeDisplay.textContent = currentRoom;
 
@@ -509,7 +580,7 @@
 
         return `
             <div class="player-row">
-                <span class="player-name${modClass}" data-player-key="${escapeHtml(sanitizeKey(player.name))}" data-player-name="${escapeHtml(player.name)}">${escapeHtml(player.name)}</span>
+                <span class="player-name${modClass}" data-player-key="${escapeHtml(sanitizeKey(player.name))}" data-player-name="${escapeHtml(player.name)}">${escapeHtml(firstName(player.name))}</span>
                 <span class="player-reactions" id="reactions-${sanitizeKey(player.name)}"></span>
                 ${statusHTML}
             </div>
@@ -733,7 +804,8 @@
             const room = snapshot.val();
             if (!room) return;
 
-            const issue = room.currentIssue || `Zadanie ${(sessionEstimates.length + 1)}`;
+            const today = new Date().toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const issue = room.currentIssue || `Refinement ${today}`;
 
             if (isNaN(devVal) && isNaN(qaVal)) {
                 if (!silent) showToast('Wpisz wycen\u0119!');
@@ -831,6 +903,7 @@
 
         gameSection.classList.add('hidden');
         lobbySection.classList.remove('hidden');
+        roomsListSection.classList.remove('hidden');
 
         localStorage.removeItem('poker-room');
         localStorage.removeItem('poker-player');
@@ -905,6 +978,7 @@
 
         gameSection.classList.add('hidden');
         lobbySection.classList.remove('hidden');
+        roomsListSection.classList.remove('hidden');
 
         localStorage.removeItem('poker-room');
         localStorage.removeItem('poker-player');
@@ -975,9 +1049,29 @@
         if (e.key === 'Enter') joinRoomBtn.click();
     });
 
+    // Click active room to join
+    activeRoomsList.addEventListener('click', (e) => {
+        const roomItem = e.target.closest('.room-item.active');
+        if (!roomItem) return;
+        const code = roomItem.dataset.roomCode;
+        if (!code) return;
+
+        // Pre-fill room code and switch to join mode
+        roomCodeInput.value = code;
+        document.getElementById('createRoomOption').style.display = 'none';
+        document.getElementById('lobbyDivider').style.display = 'none';
+        document.querySelector('.lobby-options').classList.add('join-only');
+        roomCodeInput.style.display = 'none';
+        playerName.focus();
+        showToast('Wybierz siebie i dołącz!');
+        // Scroll to lobby
+        lobbySection.scrollIntoView({ behavior: 'smooth' });
+    });
+
     // --- INIT ---
     async function init() {
         await loadTeamFromExcel();
+        loadRoomsList();
 
         // Check URL for room code
         const urlRoom = getRoomFromURL();
