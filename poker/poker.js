@@ -68,6 +68,7 @@
     const otherGroup = document.getElementById('otherGroup');
     const moderatorActions = document.getElementById('moderatorActions');
     const revealBtn = document.getElementById('revealBtn');
+    const resetVotesBtn = document.getElementById('resetVotesBtn');
     const nextRoundBtn = document.getElementById('nextRoundBtn');
     const resultsPanel = document.getElementById('resultsPanel');
     const devVotes = document.getElementById('devVotes');
@@ -443,6 +444,7 @@
 
         selectedCard = value;
         confirmVoteBtn.disabled = false;
+        confirmVoteBtn.textContent = voteStatus.textContent ? '🔄 Zmień głos' : '✅ Głosuj';
         voteStatus.textContent = '';
     }
 
@@ -451,6 +453,7 @@
         const playerKey = sanitizeKey(currentPlayer.name);
         roomRef.child('players/' + playerKey + '/vote').set(selectedCard);
         confirmVoteBtn.disabled = true;
+        confirmVoteBtn.textContent = '✅ Głosuj';
         voteStatus.textContent = '\u2713 Zagłosowano: ' + selectedCard;
         showToast('Głos oddany: ' + selectedCard);
     }
@@ -667,6 +670,25 @@
         roomRef.update({ state: 'revealed' });
     }
 
+    function resetVotes() {
+        // Clear all votes but keep the same issue
+        roomRef.child('players').once('value', (snapshot) => {
+            const updates = {};
+            snapshot.forEach(child => {
+                updates[child.key + '/vote'] = null;
+            });
+            roomRef.child('players').update(updates);
+        });
+        roomRef.update({ state: 'voting' });
+        resultsPanel.classList.add('hidden');
+        cardsDeck.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+        selectedCard = null;
+        confirmVoteBtn.disabled = true;
+        confirmVoteBtn.textContent = '✅ Głosuj';
+        voteStatus.textContent = '';
+        showToast('Głosowanie zresetowane');
+    }
+
     function nextRound() {
         // Save current estimate if we have final values
         saveFinalEstimate(true);
@@ -876,6 +898,7 @@
     confirmVoteBtn.addEventListener('click', confirmVote);
 
     revealBtn.addEventListener('click', revealVotes);
+    resetVotesBtn.addEventListener('click', resetVotes);
     nextRoundBtn.addEventListener('click', nextRound);
     saveFinalBtn.addEventListener('click', () => saveFinalEstimate(false));
     exportCsvBtn.addEventListener('click', exportCSV);
