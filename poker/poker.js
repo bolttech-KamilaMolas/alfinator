@@ -584,12 +584,10 @@
             renderSessionSummary();
         }
 
-        // Sync issue list from room
-        if (room.issueList) {
+        // Sync issue list from room (only for non-moderators - moderator is source of truth)
+        if (room.issueList && !isModerator) {
             const rawList = Array.isArray(room.issueList) ? room.issueList : Object.values(room.issueList);
-            // Only accept valid entries with id and name
             issueList = rawList.filter(item => item && item.id && item.name);
-            if (isModerator) renderIssueQueue();
         }
     }
 
