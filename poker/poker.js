@@ -451,6 +451,9 @@
         }
 
         renderCards();
+        // Disable cards by default until a task is activated
+        cardsDeck.querySelectorAll('.card').forEach(c => c.classList.add('disabled'));
+        confirmVoteBtn.disabled = true;
         lastRoundId = '';
         attachRoomListeners();
 
@@ -543,6 +546,7 @@
             }
             // Re-render players to show their votes
             if (room.players) renderPlayers(room.players);
+            if (isModerator) renderIssueQueue();
         } else {
             isRevealed = false;
             resultsPanel.classList.add('hidden');
@@ -554,6 +558,7 @@
             saveFinalBtn.textContent = '\u2705 Zapisz';
             // Re-render players to hide votes
             if (room.players) renderPlayers(room.players);
+            if (isModerator) renderIssueQueue();
 
             // Reset card selection when round changes
             const roundId = room.roundId || '';
@@ -681,7 +686,7 @@
         const qaNums = [];
         const allNumeric = [];
 
-        Object.values(players).forEach(p => {
+        Object.values(players).filter(p => p && p.name).forEach(p => {
             if (!p.vote || p.vote === '') return;
             const numVal = getNumericValue(p.vote);
             if (numVal === undefined) return;
@@ -858,11 +863,16 @@
             let actionHTML = '';
 
             if (item.status === 'active') {
-                badgeHTML = '<span class="issue-badge issue-badge-active">G\u0142osowanie...</span>';
-                actionHTML = `
-                    <button class="btn btn-small btn-primary issue-action-btn" data-action="reveal" data-issue-id="${item.id}">\ud83d\udc41\ufe0f Odkryj</button>
-                    <button class="btn btn-small btn-danger issue-action-btn" data-action="reset" data-issue-id="${item.id}">\ud83d\udd04 Reset</button>
-                `;
+                if (isRevealed) {
+                    badgeHTML = '<span class="issue-badge issue-badge-done">\u2713 Odkryte</span>';
+                    actionHTML = `<button class="btn btn-small btn-ghost issue-action-btn" data-action="reopen" data-issue-id="${item.id}">\ud83d\uddf3\ufe0f Wzn\u00f3w</button>`;
+                } else {
+                    badgeHTML = '<span class="issue-badge issue-badge-active">G\u0142osowanie...</span>';
+                    actionHTML = `
+                        <button class="btn btn-small btn-primary issue-action-btn" data-action="reveal" data-issue-id="${item.id}">\ud83d\udc41\ufe0f Odkryj</button>
+                        <button class="btn btn-small btn-danger issue-action-btn" data-action="reset" data-issue-id="${item.id}">\ud83d\udd04 Reset</button>
+                    `;
+                }
             } else if (item.status === 'done') {
                 badgeHTML = '<span class="issue-badge issue-badge-done">\u2713 Odkryte</span>';
                 actionHTML = `<button class="btn btn-small btn-ghost issue-action-btn" data-action="reopen" data-issue-id="${item.id}">\ud83d\uddf3\ufe0f Wzn\u00f3w</button>`;
@@ -1138,13 +1148,8 @@
             if (action === 'vote') {
                 startVotingOnIssue(id);
             } else if (action === 'reveal') {
-                // Update issue status to done
-                const item = issueList.find(i => i.id === id);
-                if (item) item.status = 'done';
-                renderIssueQueue();
-                roomRef.child('issueList').set(issueList);
-                // Then reveal votes
                 revealVotes();
+                renderIssueQueue();
             } else if (action === 'reset') {
                 resetVotes();
                 roomRef.child('roundId').set(Date.now().toString(36));
