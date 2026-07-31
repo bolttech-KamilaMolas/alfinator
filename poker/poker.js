@@ -407,10 +407,6 @@
             const member = findTeamMember(playerFullName);
             const role = member ? member.role : 'other';
 
-            currentRoom = code;
-            currentPlayer = { name: playerFullName, role, moderator: false };
-            isModerator = false;
-
             // Set unit from room
             const roomData = snapshot.val();
             if (roomData.unit) {
@@ -418,10 +414,23 @@
                 updateUnitToggleUI();
             }
 
+            // Check if this person is the room moderator
+            const isRoomMod = roomData.moderator && roomData.moderator.toLowerCase() === playerFullName.toLowerCase();
+
+            currentRoom = code;
+            currentPlayer = { name: playerFullName, role, moderator: isRoomMod };
+            isModerator = isRoomMod;
+
+            // Restore issueList for moderator
+            if (isRoomMod && roomData.issueList) {
+                const rawList = Array.isArray(roomData.issueList) ? roomData.issueList : Object.values(roomData.issueList);
+                issueList = rawList.filter(item => item && item.id && item.name);
+            }
+
             roomRef.child('players/' + sanitizeKey(playerFullName)).set({
                 name: playerFullName,
                 role: role,
-                moderator: false,
+                moderator: isRoomMod,
                 vote: null
             });
 
