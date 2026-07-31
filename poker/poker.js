@@ -58,6 +58,7 @@
     const roomCodeDisplay = document.getElementById('roomCodeDisplay');
     const copyRoomBtn = document.getElementById('copyRoomBtn');
     const leaveRoomBtn = document.getElementById('leaveRoomBtn');
+    const endSessionBtn = document.getElementById('endSessionBtn');
     const participantCount = document.getElementById('participantCount');
     const issueControls = document.getElementById('issueControls');
     const issueInput = document.getElementById('issueInput');
@@ -451,6 +452,7 @@
 
         if (isModerator) {
             issueControls.classList.remove('hidden');
+            endSessionBtn.classList.remove('hidden');
         }
 
         renderCards();
@@ -1175,6 +1177,46 @@
             }
             return;
         }
+    });
+
+    endSessionBtn.addEventListener('click', () => {
+        if (!confirm('Zakończyć sesję? Pokój przejdzie do historii.')) return;
+
+        // Remove all players to move room to history
+        roomRef.child('players').remove();
+
+        // Detach listeners
+        listeners.forEach(l => l.ref.off(l.event));
+        listeners = [];
+
+        roomRef = null;
+        currentRoom = null;
+        currentPlayer = null;
+        isModerator = false;
+        sessionEstimates = [];
+        isRevealed = false;
+        selectedCard = null;
+        lastRoundId = '';
+        issueList = [];
+        isLeaving = false;
+
+        gameSection.classList.add('hidden');
+        lobbySection.classList.remove('hidden');
+        roomsListSection.classList.remove('hidden');
+
+        // Reset lobby to full mode
+        document.getElementById('createRoomOption').style.display = '';
+        document.getElementById('lobbyDivider').style.display = '';
+        document.querySelector('.lobby-options').classList.remove('join-only');
+        roomCodeInput.style.display = '';
+        roomCodeInput.value = '';
+        window.history.replaceState({}, '', window.location.pathname);
+
+        localStorage.removeItem('poker-room');
+        localStorage.removeItem('poker-player');
+        localStorage.removeItem('poker-moderator');
+
+        showToast('Sesja zakończona');
     });
 
     leaveRoomBtn.addEventListener('click', () => {
