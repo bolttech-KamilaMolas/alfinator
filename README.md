@@ -9,8 +9,8 @@ Aplikacja do losowania osoby prowadzącej daily standup w zespole ALF.
 ## Jak działa
 
 1. Apka automatycznie pobiera plik Excel (`data/capacity.xlsx`) z repozytorium GitHub
-2. Parsuje zakładkę "capacity" — filtruje zespół ALF, odczytuje dostępność per tydzień
-3. Użytkownik widzi listę dostępnych osób (na podstawie bieżącego tygodnia)
+2. Parsuje zakładkę "capacity" — filtruje zespół ALF, odczytuje dostępność per dzień
+3. Użytkownik widzi listę dostępnych osób (na podstawie bieżącego dnia)
 4. Może odznaczyć nieobecnych (lokalne, resetuje się codziennie)
 5. Klika "Losuj!" — losuje osobę spośród dostępnych, które jeszcze nie prowadziły
 6. Historia losowań jest wspólna dla wszystkich (Firebase Realtime Database)
@@ -88,16 +88,16 @@ SharePoint: https://digitalcarepl.sharepoint.com/:x:/s/RND/IQCIGRMMoA8VQrf-JLfqt
 
 Zakładka: `capacity`
 
-Struktura: NAME | SURNAME | FULL NAME | SKILLSET | TEAM | DATE | tydzień1 | tydzień2 | ...
+Struktura: NAME | SURNAME | FULL NAME | SKILLSET | TEAM | DATE | dzień1 | dzień2 | ...
 
 - TEAM = "ALF" → brane pod uwagę
-- Wartość 100% / 85% = dostępna
-- Wartość 0% / puste / zielone tło = niedostępna (urlop)
+- Wartość 1 / 0.85 (lub 100% / 85%) = dostępna
+- Wartość 0 / puste = niedostępna (urlop)
 
 ## Logika losowania
 
-1. Apka wykrywa bieżący tydzień na podstawie dat w nagłówkach Excela
-2. Filtruje osoby z TEAM=ALF i dostępnością > 0% w tym tygodniu
+1. Apka wykrywa bieżący dzień na podstawie dat w nagłówkach Excela (dzienne kolumny z pełną datą, np. "3 sie 2026")
+2. Filtruje osoby z TEAM=ALF i dostępnością > 0% w tym dniu
 3. Usuwa osoby z `EXCLUDED_MEMBERS`
 4. Użytkownik może odznaczyć kogoś ręcznie (nieobecny ad hoc)
 5. Z puli dostępnych usuwa tych, którzy już prowadzili (historia Firebase)
@@ -114,8 +114,12 @@ daily-picker/
 ├── alf.png                 # Logo ALFa
 ├── preview.html            # Standalone preview do testowania (mock data)
 ├── update-capacity.bat     # Skrypt do aktualizacji danych
-└── data/
-    └── capacity.xlsx       # Plik z dostępnością (aktualizowany co tydzień)
+├── data/
+│   └── capacity.xlsx       # Plik z dostępnością (aktualizowany co tydzień)
+└── poker/                  # Planning poker (osobny moduł)
+    ├── index.html
+    ├── poker.js
+    └── styles.css
 ```
 
 ## Historia projektu
@@ -133,6 +137,7 @@ daily-picker/
 11. Usunięcie ręcznego czyszczenia historii dla użytkowników — tylko auto-clear + admin
 12. Audit log w Firebase (`audit_log`) — logowanie zdarzeń: auto_clear, admin_clear
 13. Fix `update-capacity.bat` — obsługa `&` w nazwie pliku R&D (27.07.2026)
+14. Fix parsowania dat — etykiety kolumn zawierają rok, eliminacja kolizji dat między latami (03.08.2026)
 
 ## Tryb administratora
 
