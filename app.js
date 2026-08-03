@@ -177,8 +177,17 @@
                 if (typeof val === 'number' && val > 40000) {
                     const date = excelDateToJS(val);
                     label = formatDateLabel(date);
+                } else if (val instanceof Date) {
+                    label = formatDateLabel(val);
                 } else {
-                    label = String(val).trim();
+                    const str = String(val).trim();
+                    // Try parsing as date string (e.g. "2026-08-03" from SheetJS)
+                    const parsed = new Date(str);
+                    if (!isNaN(parsed.getTime()) && str.match(/^\d{4}-\d{2}-\d{2}/)) {
+                        label = formatDateLabel(parsed);
+                    } else {
+                        label = str;
+                    }
                 }
                 if (label) weekColumns.push({ label, colIndex: c });
             }
@@ -238,12 +247,14 @@
         const day = date.getDate();
         const months = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze',
             'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
-        return `${day} ${months[date.getMonth()]}`;
+        const year = date.getFullYear();
+        return `${day} ${months[date.getMonth()]} ${year}`;
     }
 
     // --- WEEK DETECTION ---
     function findCurrentWeek() {
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         let bestMatch = weekColumns.length - 1;
 
         for (let i = 0; i < weekColumns.length; i++) {
@@ -265,6 +276,15 @@
         const months = { 'sty': 0, 'lut': 1, 'mar': 2, 'kwi': 3, 'maj': 4, 'cze': 5,
             'lip': 6, 'sie': 7, 'wrz': 8, 'paź': 9, 'lis': 10, 'gru': 11 };
         const parts = label.toLowerCase().split(/\s+/);
+        if (parts.length >= 3) {
+            const day = parseInt(parts[0]);
+            const month = months[parts[1]];
+            const year = parseInt(parts[2]);
+            if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+                return new Date(year, month, day);
+            }
+        }
+        // Fallback for old format without year (assume current year)
         if (parts.length >= 2) {
             const day = parseInt(parts[0]);
             const month = months[parts[1]];
