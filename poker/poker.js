@@ -102,6 +102,8 @@
     const currentIssueBanner = document.getElementById('currentIssueBanner');
     const currentIssueName = document.getElementById('currentIssueName');
     const clearPokerHistoryBtn = document.getElementById('clearPokerHistoryBtn');
+    const moderatorGuestName = document.getElementById('moderatorGuestName');
+    const playerGuestName = document.getElementById('playerGuestName');
 
     // --- UTILITIES ---
     function generateRoomCode() {
@@ -720,13 +722,13 @@
         const qaAdj = applyMinDay(qaNums);
         const allAdj = applyMinDay(allNumeric);
 
-        devSummary.textContent = devAdj.length > 0 ? sum(devAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
-        qaSummary.textContent = qaAdj.length > 0 ? sum(qaAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
-        resultTotal.textContent = allAdj.length > 0 ? sum(allAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
+        devSummary.textContent = devAdj.length > 0 ? avg(devAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
+        qaSummary.textContent = qaAdj.length > 0 ? avg(qaAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
+        resultTotal.textContent = allAdj.length > 0 ? avg(allAdj).toFixed(1) + ' ' + getUnitLabel() : '—';
 
-        // Pre-fill final estimate for everyone
-        finalDev.value = devAdj.length > 0 ? Math.round(sum(devAdj)) : '';
-        finalQa.value = qaAdj.length > 0 ? Math.round(sum(qaAdj)) : '';
+        // Pre-fill final estimate with average (rounded)
+        finalDev.value = devAdj.length > 0 ? Math.round(avg(devAdj) * 2) / 2 : '';
+        finalQa.value = qaAdj.length > 0 ? Math.round(avg(qaAdj) * 2) / 2 : '';
 
         // Show final estimate inputs for everyone after reveal
         document.querySelectorAll('.final-col').forEach(el => el.classList.remove('hidden'));
@@ -1110,9 +1112,9 @@
 
     // --- EVENT LISTENERS ---
     createRoomBtn.addEventListener('click', () => {
-        const name = moderatorName.value;
+        const name = moderatorName.value || moderatorGuestName.value.trim();
         if (!name) {
-            showToast('Wybierz siebie z listy!');
+            showToast('Wybierz siebie z listy lub wpisz imię!');
             moderatorName.focus();
             return;
         }
@@ -1121,9 +1123,9 @@
 
     joinRoomBtn.addEventListener('click', () => {
         const code = roomCodeInput.value.trim();
-        const name = playerName.value;
+        const name = playerName.value || playerGuestName.value.trim();
         if (!code) { showToast('Wpisz kod pokoju!'); roomCodeInput.focus(); return; }
-        if (!name) { showToast('Wybierz siebie z listy!'); playerName.focus(); return; }
+        if (!name) { showToast('Wybierz siebie z listy lub wpisz imię!'); playerName.focus(); return; }
         joinRoom(code, name);
     });
 
@@ -1326,6 +1328,20 @@
     // Enter key in lobby inputs
     roomCodeInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') joinRoomBtn.click();
+    });
+
+    // Guest name / select mutual exclusivity
+    moderatorName.addEventListener('change', () => {
+        if (moderatorName.value) moderatorGuestName.value = '';
+    });
+    moderatorGuestName.addEventListener('input', () => {
+        if (moderatorGuestName.value.trim()) moderatorName.selectedIndex = 0;
+    });
+    playerName.addEventListener('change', () => {
+        if (playerName.value) playerGuestName.value = '';
+    });
+    playerGuestName.addEventListener('input', () => {
+        if (playerGuestName.value.trim()) playerName.selectedIndex = 0;
     });
 
     // Click active room to join

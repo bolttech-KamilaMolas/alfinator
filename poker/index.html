@@ -41,6 +41,8 @@
                         <select id="moderatorName" class="input">
                             <option value="" disabled selected>Wybierz siebie...</option>
                         </select>
+                        <div class="guest-separator">lub wpisz jako gość:</div>
+                        <input type="text" id="moderatorGuestName" placeholder="Imię i nazwisko (gość)" class="input" autocomplete="off">
                         <button class="btn btn-primary" id="createRoomBtn">🚀 Stwórz pokój</button>
                     </div>
                     <div class="lobby-divider" id="lobbyDivider">lub</div>
@@ -51,6 +53,8 @@
                         <select id="playerName" class="input">
                             <option value="" disabled selected>Wybierz siebie...</option>
                         </select>
+                        <div class="guest-separator">lub wpisz jako gość:</div>
+                        <input type="text" id="playerGuestName" placeholder="Imię i nazwisko (gość)" class="input" autocomplete="off">
                         <button class="btn btn-primary" id="joinRoomBtn">🎯 Dołącz do głosowania</button>
                     </div>
                 </div>
@@ -140,7 +144,7 @@
                     <thead>
                         <tr>
                             <th></th>
-                            <th>Σ głosów</th>
+                            <th>x̄ głosów</th>
                             <th class="final-col hidden" id="finalCol">Finalna wycena</th>
                         </tr>
                     </thead>

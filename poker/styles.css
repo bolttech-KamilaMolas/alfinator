@@ -235,6 +235,13 @@ select.input {
     padding-top: 3rem;
 }
 
+.guest-separator {
+    font-size: 0.75rem;
+    color: var(--gray-400);
+    margin: 0.5rem 0 0.4rem;
+    font-weight: 500;
+}
+
 /* === ROOM BAR === */
 .room-bar {
     display: flex;
