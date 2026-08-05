@@ -121,11 +121,15 @@ Struktura: NAME | SURNAME | FULL NAME | SKILLSET | TEAM | DATE | dzień1 | dzie�
 ```
 daily-picker/
 ├── index.html              # Strona główna
+├── admin-history.html      # Panel admina do zarządzania historią
 ├── styles.css              # Style (bolttech colors)
 ├── app.js                  # Cała logika
 ├── alf.png                 # Logo ALFa
 ├── preview.html            # Standalone preview do testowania (mock data)
+├── restore-history.js      # Skrypt do przywracania z browser console
 ├── update-capacity.bat     # Skrypt do aktualizacji danych
+├── LOGIKA_FIX.md           # Dokumentacja logiki skreślenia vs wylosowania
+├── PRZYWRACANIE_HISTORII.md # Dokumentacja panelu admina
 ├── data/
 │   └── capacity.xlsx       # Plik z dostępnością (aktualizowany co tydzień)
 └── poker/                  # Planning poker (osobny moduł)
@@ -155,8 +159,29 @@ daily-picker/
     - Auto-clear liczy TYLKO wylosowanych, nie skreślonych
     - Historia jest prawidłowo przywracana po odznaczeniu
     - Ulepszona wizualizacja: szary (skreślony) vs żółty (wylosowany)
+16. **FEAT: Panel admina do zarządzania historią (05.08.2026)**
+    - admin-history.html — pełny panel do view/export/restore
+    - Export historii do JSON (backup)
+    - Restore z JSON-a (przywrócenie)
+    - Dodawanie wpisów ręcznie
+    - Przeglądanie audit log-u
+    - Dokumentacja: PRZYWRACANIE_HISTORII.md
 
-## Tryb administratora
+## Panel Admina do Zarządzania Historią
+
+**URL:** https://bolttech-kamilamolas.github.io/alfinator/admin-history.html
+
+Panel administracyjny do zarządzania historią losowań:
+
+- **📋 Pokaż historię bieżącą** — tabela ze wszystkimi wpisami
+- **📥 Eksportuj do JSON** — backup historii
+- **♻️ Przywróć Historię** — wklej JSON i przywróć
+- **➕ Dodaj Wpis Ręcznie** — dla zmian manualnych
+- **📊 Dziennik Audytu** — co się stało (auto_clear, admin_clear)
+- **🗑️ Wyczyść Historię** — admin tylko
+- **⚙️ Status Bazy** — sprawdzenie połączenia
+
+Szczegóły: [`PRZYWRACANIE_HISTORII.md`](./PRZYWRACANIE_HISTORII.md)
 
 Przycisk "Wyczyść historię" jest ukryty dla zwykłych użytkowników. Aby uzyskać dostęp:
 
