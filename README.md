@@ -99,10 +99,22 @@ Struktura: NAME | SURNAME | FULL NAME | SKILLSET | TEAM | DATE | dzień1 | dzie�
 1. Apka wykrywa bieżący dzień na podstawie dat w nagłówkach Excela (dzienne kolumny z pełną datą, np. "3 sie 2026")
 2. Filtruje osoby z TEAM=ALF i dostępnością > 0% w tym dniu
 3. Usuwa osoby z `EXCLUDED_MEMBERS`
-4. Użytkownik może odznaczyć kogoś ręcznie (nieobecny ad hoc)
+4. Użytkownik może odznaczyć kogoś ręcznie (nieobecny ad hoc) — **osoba skreślona nie trafia do historii**
 5. Z puli dostępnych usuwa tych, którzy już prowadzili (historia Firebase)
 6. Losuje spośród pozostałych
 7. Po wyczerpaniu wszystkich — auto-reset historii
+
+### Rozróżnienie: skreślony vs wylosowany
+
+- **Skreślony (unchecked)** = szary, przekreślony, resetting co dzień
+  - Nie pojawia się w losowaniu
+  - NIE dodawany do historii
+  - NIE wpływa na auto-clear
+  
+- **Wylosowany (used)** = żółty, ze znaczkiem ✓
+  - Pojawia się w historii
+  - Podlega auto-clear
+  - Przy kolejnym wylosowaniu nie pojawia się w puli (aż do auto-clear)
 
 ## Struktura plików
 
@@ -138,6 +150,11 @@ daily-picker/
 12. Audit log w Firebase (`audit_log`) — logowanie zdarzeń: auto_clear, admin_clear
 13. Fix `update-capacity.bat` — obsługa `&` w nazwie pliku R&D (27.07.2026)
 14. Fix parsowania dat — etykiety kolumn zawierają rok, eliminacja kolizji dat między latami (03.08.2026)
+15. **FIX: Rozróżnienie logiki skreślenia vs wylosowania (05.08.2026)**
+    - Skreśleni użytkownicy NIE są dodawani do historii
+    - Auto-clear liczy TYLKO wylosowanych, nie skreślonych
+    - Historia jest prawidłowo przywracana po odznaczeniu
+    - Ulepszona wizualizacja: szary (skreślony) vs żółty (wylosowany)
 
 ## Tryb administratora
 

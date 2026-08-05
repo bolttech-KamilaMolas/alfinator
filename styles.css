@@ -225,13 +225,18 @@ body {
     background: var(--gray-50);
     color: var(--gray-600);
     text-decoration: line-through;
+    opacity: 0.6;
 }
+
+/* .unchecked = skreślony dzisiaj (disabled), nie losuje się, nie dodawany do historii */
 
 .member-toggle.used {
     border-color: var(--yellow-60);
     background: var(--yellow-20);
     color: var(--gray-600);
 }
+
+/* .used = wylosowany dzisiaj, pojawia się w historii, podlega auto-clear */
 
 .picker-action {
     text-align: center;

@@ -84,6 +84,7 @@
     }
 
     function addToHistory(name) {
+        // WAŻNE: dodajemy TYLKO wylosowane osoby, nie skreślone!
         const entry = {
             name: name,
             date: new Date().toLocaleDateString('pl-PL', {
@@ -329,7 +330,7 @@
 
     function renderMembers() {
         membersList.innerHTML = '';
-        const usedNames = weekHistory.map(h => h.name);
+        const usedNames = new Set(weekHistory.map(h => h.name));
         const membersForWeek = getMembersForWeek();
 
         if (membersForWeek.length === 0) {
@@ -339,7 +340,7 @@
         }
 
         membersForWeek.forEach(member => {
-            const isUsed = usedNames.includes(member.fullName);
+            const isUsed = usedNames.has(member.fullName);
             const isDisabled = disabledMembers.has(member.fullName);
 
             const label = document.createElement('label');
@@ -397,11 +398,15 @@
 
     function getEligibleMembers() {
         const available = getAvailableMembers();
-        const usedNames = weekHistory.map(h => h.name);
-        return available.filter(m => !usedNames.includes(m.fullName));
+        const usedNames = new Set(weekHistory.map(h => h.name));
+        return available.filter(m => !usedNames.has(m.fullName));
     }
 
     // --- DISABLED MEMBERS (localStorage - resets daily) ---
+    // WAŻNE: skreśleni (disabled) ≠ wylosowani (picked)
+    // - Skreślony: checkbox odkryty, osoba NIE pojawia się w losowaniu, NIE dodawana do historii
+    // - Wylosowany: pojawia się w historii ze znaczkiem ✓, podlega auto-clear
+    
     function getDisabledKey() {
         const today = new Date().toISOString().slice(0, 10);
         return `alfinator-disabled-${today}`;
@@ -409,7 +414,8 @@
 
     function loadDisabledMembers() {
         try {
-            for (let i = 0; i < localStorage.length; i++) {
+            // Wyczyść stare wpisy z poprzednich dni
+            for (let i = localStorage.length - 1; i >= 0; i--) {
                 const key = localStorage.key(i);
                 if (key && key.startsWith('alfinator-disabled-') && key !== getDisabledKey()) {
                     localStorage.removeItem(key);
@@ -424,6 +430,19 @@
 
     function saveDisabledMembers() {
         localStorage.setItem(getDisabledKey(), JSON.stringify([...disabledMembers]));
+    }
+
+    // Check for day change every 60 seconds and reset if needed
+    function startDayChangeWatcher() {
+        let lastKey = getDisabledKey();
+        setInterval(() => {
+            const currentKey = getDisabledKey();
+            if (currentKey !== lastKey) {
+                lastKey = currentKey;
+                loadDisabledMembers();
+                renderMembers();
+            }
+        }, 60000); // Check every minute
     }
 
     // --- RANDOM PICK ---
@@ -461,11 +480,12 @@
             resultName.textContent = picked.fullName;
             addToHistory(picked.fullName);
 
-            // Auto-clear when all available members have been picked
+            // Auto-clear gdy TYLKO skreślone osoby zostały (bez wylosowania nowych)
             setTimeout(() => {
-                const available = getAvailableMembers();
-                const usedNames = weekHistory.map(h => h.name);
-                const remaining = available.filter(m => !usedNames.includes(m.fullName));
+                const available = getAvailableMembers();  // osoby dostępne (nie skreślone)
+                const usedNames = new Set(weekHistory.map(h => h.name));  // wylosowane osoby
+                const remaining = available.filter(m => !usedNames.has(m.fullName));  // dostępne ale niewylosowane
+                
                 if (remaining.length === 0 && available.length > 0) {
                     setTimeout(() => {
                         logAuditEvent('auto_clear', { reason: 'Wszyscy wylosowani' });
@@ -514,6 +534,7 @@
     });
 
     // --- INIT ---
+    startDayChangeWatcher(); // Start monitoring for day changes
     fetchExcelFromRepo();
 
 })();
