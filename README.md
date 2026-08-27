@@ -51,29 +51,6 @@ Aplikacja do losowania osoby prowadzącej daily standup w zespole ALF.
 - **GitHub Pages** — hosting
 - **Kolorystyka** — bolttech (cyan #00BAC7, navy #170F4F, yellow #E3D900)
 
-## Konfiguracja tokena GitHub
-
-Historia losowań wymaga tokena do zapisu. Token jest przechowywany w `localStorage` przeglądarki.
-
-### Tworzenie tokena
-
-1. Wejdź na https://github.com/settings/personal-access-tokens/new
-2. Nazwa: np. `alfinator-history`
-3. Expiration: Custom → 1 rok (lub No expiration)
-4. Repository access: **Only select repositories** → `alfinator`
-5. Repository permissions → **Contents**: Read and Write
-6. Kliknij "Generate token"
-7. Skopiuj token
-
-### Wklejanie tokena
-
-1. Otwórz https://bolttech-kamilamolas.github.io/alfinator/
-2. Na dole strony pojawi się żółte pole "Wklej token GitHub..."
-3. Wklej token i kliknij "Zapisz"
-4. Token zapamiętywany w przeglądarce — wystarczy wkleić raz
-
-> Każdy użytkownik musi wkleić token raz na swojej przeglądarce.
-
 ## Wykluczeni z losowania
 
 W pliku `app.js`, stała `EXCLUDED_MEMBERS`:
@@ -139,6 +116,17 @@ Struktura: NAME | SURNAME | FULL NAME | SKILLSET | TEAM | DATE | dzień1 | dzie�
   - Podlega auto-clear
   - Przy kolejnym wylosowaniu nie pojawia się w puli (aż do auto-clear)
 
+## Token GitHub
+
+Token do zapisu historii jest obfuskowany w `app.js` (base64, runtime decode). Nie wymaga żadnej konfiguracji od użytkowników — działa od razu.
+
+Jeśli token wygaśnie lub zostanie zrevokowany:
+1. Stwórz nowy na https://github.com/settings/personal-access-tokens/new
+   - Repository: `alfinator`, Permissions: Contents Read/Write
+2. Zakoduj: `btoa('nowy_token')` w konsoli przeglądarki
+3. Rozbij na kawałki i wstaw w `app.js` w linii `GITHUB_TOKEN`
+4. Commit + push
+
 ## Admin
 
 Przycisk "Wyczyść historię" jest dostępny pod URL z parametrem `?admin`:
@@ -154,11 +142,12 @@ Czyszczenie usuwa wszystkie dzisiejsze wpisy z `data/history.json`.
 ```
 daily-picker/
 ├── index.html              # Strona główna
-├── admin-history.html      # Panel admina (legacy)
 ├── styles.css              # Style (bolttech colors)
-├── app.js                  # Cała logika (GitHub API)
+├── app.js                  # Cała logika (GitHub API, token obfuskowany)
 ├── alf.png                 # Logo ALFa
 ├── update-capacity.bat     # Skrypt do aktualizacji danych
+├── LOGIKA_FIX.md           # Dokumentacja logiki skreślenie vs wylosowanie
+├── PRZYWRACANIE_HISTORII.md # Jak przywrócić historię
 ├── data/
 │   ├── capacity.xlsx       # Plik z dostępnością (aktualizowany co tydzień)
 │   └── history.json        # Historia losowań (aktualizowana przez GitHub API)

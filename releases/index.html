@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Release Management — Daily Picker</title>
+    <link rel="icon" data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-text">
+                    <h1>📦 Release Management</h1>
+                    <p class="subtitle">Track software releases across teams</p>
+                </div>
+            </div>
+            <nav class="header-nav">
+                <a href="../index.html" class="nav-link">← Wróć do Daily Picker</a>
+            </nav>
+        </header>
+
+        <!-- Loading State -->
+        <section class="loading-section" id="loadingSection">
+            <div class="spinner"></div>
+            <p>Ładowanie wydań...</p>
+        </section>
+
+        <!-- Error State -->
+        <section class="error-section hidden" id="errorSection">
+            <p>⚠️ Nie udało się załadować wydań.</p>
+            <button class="btn btn-primary" id="retryBtn">🔄 Spróbuj ponownie</button>
+        </section>
+
+        <!-- Main Content -->
+        <section class="main-section hidden" id="mainSection">
+            
+            <!-- Filters & Actions -->
+            <div class="toolbar">
+                <div class="filters">
+                    <select id="filterStatus" class="filter-select">
+                        <option value="">Status: Wszystkie</option>
+                        <option value="planned">Zaplanowane</option>
+                        <option value="in-progress">W trakcie</option>
+                        <option value="testing">Testowanie</option>
+                        <option value="completed">Ukończone</option>
+                        <option value="blocked">Zablokowane</option>
+                        <option value="failed">Nieudane</option>
+                    </select>
+
+                    <select id="filterTeam" class="filter-select">
+                        <option value="">Zespół: Wszystkie</option>
+                        <option value="ALF">ALF</option>
+                        <option value="WAREX">WAREX</option>
+                        <option value="OPTIMUS">OPTIMUS</option>
+                        <option value="MASH">MASH</option>
+                        <option value="MAGENTO">MAGENTO</option>
+                        <option value="QA">QA</option>
+                        <option value="IT DELIVERY">IT DELIVERY</option>
+                    </select>
+
+                    <input type="text" id="searchInput" class="filter-input" placeholder="Szukaj (wersja, nazwa, lead)...">
+                </div>
+
+                <div class="actions">
+                    <button class="btn btn-primary" id="newReleaseBtn">
+                        <span class="btn-icon">➕</span> Nowe wydanie
+                    </button>
+                    <button class="btn btn-secondary" id="exportBtn">
+                        <span class="btn-icon">💾</span> Eksportuj
+                    </button>
+                    <button class="btn btn-secondary" id="importBtn">
+                        <span class="btn-icon">📂</span> Importuj
+                    </button>
+                </div>
+            </div>
+
+            <!-- Releases List -->
+            <div class="releases-list" id="releasesList">
+                <p class="empty-state">Brak wydań. Stwórz pierwsze! 📦</p>
+            </div>
+
+        </section>
+
+        <!-- Release Detail Modal -->
+        <div class="modal hidden" id="releaseModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Nowe wydanie</h2>
+                    <button class="modal-close" id="modalCloseBtn">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="releaseForm">
+                        
+                        <!-- Basic Info -->
+                        <fieldset class="form-section">
+                            <legend>Informacje Podstawowe</legend>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="releaseVersion">Wersja *</label>
+                                    <input type="text" id="releaseVersion" placeholder="2.1.0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="releaseName">Nazwa *</label>
+                                    <input type="text" id="releaseName" placeholder="Q3 ALF Updates" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="releaseDescription">Opis</label>
+                                <textarea id="releaseDescription" rows="3" placeholder="Szczegółowy opis wydania..."></textarea>
+                            </div>
+                        </fieldset>
+
+                        <!-- Status & Timeline -->
+                        <fieldset class="form-section">
+                            <legend>Status & Harmonogram</legend>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="releaseStatus">Status *</label>
+                                    <select id="releaseStatus" required>
+                                        <option value="planned">Zaplanowane</option>
+                                        <option value="in-progress">W trakcie</option>
+                                        <option value="testing">Testowanie</option>
+                                        <option value="completed">Ukończone</option>
+                                        <option value="blocked">Zablokowane</option>
+                                        <option value="failed">Nieudane</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="releaseHealth">Zdrowie</label>
+                                    <select id="releaseHealth">
+                                        <option value="green">🟢 Zielone</option>
+                                        <option value="amber">🟡 Bursztynowe</option>
+                                        <option value="red">🔴 Czerwone</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="releasePlannedStart">Planowany start</label>
+                                    <input type="date" id="releasePlannedStart">
+                                </div>
+                                <div class="form-group">
+                                    <label for="releasePlannedEnd">Planowany koniec</label>
+                                    <input type="date" id="releasePlannedEnd">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="releaseProgress">Postęp (%)</label>
+                                    <input type="range" id="releaseProgress" min="0" max="100" value="0">
+                                    <span id="progressValue">0%</span>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- Team & Ownership -->
+                        <fieldset class="form-section">
+                            <legend>Zespół & Właściciel</legend>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="techLeadField">Tech Lead (ALF)</label>
+                                    <select id="techLeadField" class="team-lead-select">
+                                        <option value="">— Wybierz —</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="qaLeadField">QA Lead</label>
+                                    <select id="qaLeadField" class="team-lead-select">
+                                        <option value="">— Wybierz —</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="vacationWarning" class="vacation-warning hidden">
+                                ⚠️ <strong>Konflikty urlopów:</strong>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Zaangażowane zespoły</label>
+                                <div class="checkbox-group">
+                                    <label><input type="checkbox" class="team-checkbox" value="ALF"> ALF</label>
+                                    <label><input type="checkbox" class="team-checkbox" value="WAREX"> WAREX</label>
+                                    <label><input type="checkbox" class="team-checkbox" value="OPTIMUS"> OPTIMUS</label>
+                                    <label><input type="checkbox" class="team-checkbox" value="MASH"> MASH</label>
+                                    <label><input type="checkbox" class="team-checkbox" value="MAGENTO"> MAGENTO</label>
+                                    <label><input type="checkbox" class="team-checkbox" value="QA"> QA</label>
+                                    <label><input type="checkbox" class="team-checkbox" value="IT DELIVERY"> IT DELIVERY</label>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <!-- Blockers & Notes -->
+                        <fieldset class="form-section">
+                            <legend>Noty & Blokery</legend>
+                            
+                            <div class="form-group">
+                                <label for="releaseBlockers">Blokery (po linii)</label>
+                                <textarea id="releaseBlockers" rows="2" placeholder="Każdy bloker w osobnej linii..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="releaseNotes">Notatki</label>
+                                <textarea id="releaseNotes" rows="2" placeholder="Dodatkowe notatki..."></textarea>
+                            </div>
+                        </fieldset>
+
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="modalCancelBtn">Anuluj</button>
+                    <button class="btn btn-primary" id="modalSaveBtn">Zapisz</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Modal -->
+        <div class="modal hidden" id="importModal">
+            <div class="modal-content modal-small">
+                <div class="modal-header">
+                    <h2>Importuj wydania z Excela</h2>
+                    <button class="modal-close" id="importCloseBtn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Wybierz plik Excel z wydaniami do importu:</p>
+                    <input type="file" id="importFile" accept=".xlsx,.xls" class="file-input">
+                    <div id="importPreview" class="import-preview hidden">
+                        <p>📋 Znaleziono <strong id="importCount">0</strong> wydań do importu</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="importCancelBtn">Anuluj</button>
+                    <button class="btn btn-primary" id="importConfirmBtn" disabled>Importuj</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Release Management • Dane synchronizowane w czasie rzeczywistym • Firebase</p>
+        </footer>
+
+    </div>
+
+    <script src="releases.js"></script>
+</body>
+</html>
