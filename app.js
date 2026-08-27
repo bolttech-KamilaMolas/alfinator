@@ -47,7 +47,7 @@
             if (!response.ok) throw new Error(`GitHub API: ${response.status}`);
             const data = await response.json();
             historySha = data.sha;
-            const decoded = decodeURIComponent(escape(atob(data.content)));
+            const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
             const content = JSON.parse(decoded);
             return Array.isArray(content) ? content : [];
         } catch (error) {
