@@ -76,6 +76,32 @@
                     body: JSON.stringify(body)
                 }
             );
+            if (response.status === 409) {
+                // SHA conflict — refetch and retry once
+                console.warn('SHA conflict, retrying...');
+                await fetchHistory();
+                body.sha = historySha;
+                body.content = btoa(unescape(encodeURIComponent(JSON.stringify(entries, null, 2))));
+                const retry = await fetch(
+                    `https://api.github.com/repos/${GITHUB_REPO}/contents/${HISTORY_PATH}`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(body)
+                    }
+                );
+                if (!retry.ok) {
+                    const err = await retry.json();
+                    throw new Error(`GitHub PUT retry failed: ${retry.status} - ${err.message}`);
+                }
+                const retryResult = await retry.json();
+                historySha = retryResult.content.sha;
+                return;
+            }
             if (!response.ok) {
                 const err = await response.json();
                 throw new Error(`GitHub PUT failed: ${response.status} - ${err.message}`);
