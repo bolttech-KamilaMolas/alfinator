@@ -13,44 +13,66 @@ Aplikacja do losowania osoby prowadzącej daily standup w zespole ALF.
 3. Użytkownik widzi listę dostępnych osób (na podstawie bieżącego dnia)
 4. Może odznaczyć nieobecnych (lokalne, resetuje się codziennie)
 5. Klika "Losuj!" — losuje osobę spośród dostępnych, które jeszcze nie prowadziły
-6. Historia losowań jest wspólna dla wszystkich (Firebase Realtime Database)
-7. Gdy wszyscy dostępni zostaną wylosowani — historia kasuje się automatycznie (nowa runda)
+6. Historia losowań jest wspólna dla wszystkich (GitHub API → `data/history.json`)
+7. Gdy wszyscy z zespołu zostaną wylosowani — historia kasuje się automatycznie (nowa runda)
 
 ## Architektura
 
 ```
-┌─────────────────────────────────────┐
-│  GitHub Pages (hosting)             │
-│  bolttech-kamilamolas.github.io     │
-│                                     │
-│  index.html / styles.css / app.js   │
-│  data/capacity.xlsx                 │
-│  alf.png                            │
-└────────────────┬────────────────────┘
-                 │
-    ┌────────────┼────────────────┐
-    │            │                │
-    ▼            ▼                ▼
- SheetJS      Firebase         Przeglądarka
- (parsowanie  (wspólna         (localStorage:
-  Excela)      historia)        odznaczeni
-                                nieobecni)
+┌──────────────────────────────────────────────────────────┐
+│  GitHub Pages (hosting)                                  │
+│  bolttech-kamilamolas.github.io/alfinator/               │
+│                                                          │
+│  index.html / styles.css / app.js                        │
+│  data/capacity.xlsx    (dane zespołu)                    │
+│  data/history.json     (historia losowań)                │
+└──────────────┬───────────────────────────────────────────┘
+               │
+               │ GitHub Contents API (REST)
+               │ Read: publiczny dostęp
+               │ Write: Personal Access Token (localStorage)
+               ▼
+┌──────────────────────────────────────────────────────────┐
+│  GitHub Repository (storage)                             │
+│  bolttech-KamilaMolas/alfinator                          │
+│                                                          │
+│  data/history.json — wspólna historia losowań            │
+│  (aktualizowana przez frontend via GitHub API)           │
+└──────────────────────────────────────────────────────────┘
 ```
+
+**Zero backendu** — frontend komunikuje się bezpośrednio z GitHub API.
 
 ## Tech stack
 
-- **HTML/CSS/JS** — statyczna strona, zero backendu
+- **Frontend:** HTML/CSS/JS — statyczna strona na GitHub Pages
 - **SheetJS (xlsx)** — parsowanie plików Excel w przeglądarce
-- **Firebase Realtime Database** — wspólna historia losowań (real-time)
+- **GitHub Contents API** — odczyt/zapis historii losowań (`data/history.json`)
 - **GitHub Pages** — hosting
-- **Kolorystyka** — bolttech (cyan, navy, yellow)
+- **Kolorystyka** — bolttech (cyan #00BAC7, navy #170F4F, yellow #E3D900)
 
-## Firebase
+## Konfiguracja tokena GitHub
 
-- Projekt: `alfinator`
-- Plan: Spark (darmowy)
-- Database URL: `https://alfinator-default-rtdb.europe-west1.firebasedatabase.app`
-- Konsola: https://console.firebase.google.com/project/alfinator/database
+Historia losowań wymaga tokena do zapisu. Token jest przechowywany w `localStorage` przeglądarki.
+
+### Tworzenie tokena
+
+1. Wejdź na https://github.com/settings/personal-access-tokens/new
+2. Nazwa: np. `alfinator-history`
+3. Expiration: Custom → 1 rok (lub No expiration)
+4. Repository access: **Only select repositories** → `alfinator`
+5. Repository permissions → **Contents**: Read and Write
+6. Kliknij "Generate token"
+7. Skopiuj token
+
+### Wklejanie tokena
+
+1. Otwórz https://bolttech-kamilamolas.github.io/alfinator/
+2. Na dole strony pojawi się żółte pole "Wklej token GitHub..."
+3. Wklej token i kliknij "Zapisz"
+4. Token zapamiętywany w przeglądarce — wystarczy wkleić raz
+
+> Każdy użytkownik musi wkleić token raz na swojej przeglądarce.
 
 ## Wykluczeni z losowania
 
@@ -58,6 +80,7 @@ W pliku `app.js`, stała `EXCLUDED_MEMBERS`:
 - Kamila Molas (lider)
 - Adrian Słabicki (inny projekt)
 - Szymon Bartnik (inny projekt)
+- Mikołaj Banaszkiewicz
 
 Aby dodać/usunąć — edytuj tablicę, commit, push.
 
@@ -100,13 +123,13 @@ Struktura: NAME | SURNAME | FULL NAME | SKILLSET | TEAM | DATE | dzień1 | dzie�
 2. Filtruje osoby z TEAM=ALF i dostępnością > 0% w tym dniu
 3. Usuwa osoby z `EXCLUDED_MEMBERS`
 4. Użytkownik może odznaczyć kogoś ręcznie (nieobecny ad hoc) — **osoba skreślona nie trafia do historii**
-5. Z puli dostępnych usuwa tych, którzy już prowadzili (historia Firebase)
+5. Z puli dostępnych usuwa tych, którzy już prowadzili (historia z `data/history.json`)
 6. Losuje spośród pozostałych
-7. Po wyczerpaniu wszystkich — auto-reset historii
+7. Po wyczerpaniu **wszystkich z pełnej listy** (nie tylko zaznaczonych) — auto-reset historii
 
 ### Rozróżnienie: skreślony vs wylosowany
 
-- **Skreślony (unchecked)** = szary, przekreślony, resetting co dzień
+- **Skreślony (unchecked)** = szary, przekreślony, resetuje się co dzień
   - Nie pojawia się w losowaniu
   - NIE dodawany do historii
   - NIE wpływa na auto-clear
@@ -116,26 +139,35 @@ Struktura: NAME | SURNAME | FULL NAME | SKILLSET | TEAM | DATE | dzień1 | dzie�
   - Podlega auto-clear
   - Przy kolejnym wylosowaniu nie pojawia się w puli (aż do auto-clear)
 
+## Admin
+
+Przycisk "Wyczyść historię" jest dostępny pod URL z parametrem `?admin`:
+
+```
+https://bolttech-kamilamolas.github.io/alfinator/?admin
+```
+
+Czyszczenie usuwa wszystkie dzisiejsze wpisy z `data/history.json`.
+
 ## Struktura plików
 
 ```
 daily-picker/
 ├── index.html              # Strona główna
-├── admin-history.html      # Panel admina do zarządzania historią
+├── admin-history.html      # Panel admina (legacy)
 ├── styles.css              # Style (bolttech colors)
-├── app.js                  # Cała logika
+├── app.js                  # Cała logika (GitHub API)
 ├── alf.png                 # Logo ALFa
-├── preview.html            # Standalone preview do testowania (mock data)
-├── restore-history.js      # Skrypt do przywracania z browser console
 ├── update-capacity.bat     # Skrypt do aktualizacji danych
-├── LOGIKA_FIX.md           # Dokumentacja logiki skreślenia vs wylosowania
-├── PRZYWRACANIE_HISTORII.md # Dokumentacja panelu admina
 ├── data/
-│   └── capacity.xlsx       # Plik z dostępnością (aktualizowany co tydzień)
-└── poker/                  # Planning poker (osobny moduł)
-    ├── index.html
-    ├── poker.js
-    └── styles.css
+│   ├── capacity.xlsx       # Plik z dostępnością (aktualizowany co tydzień)
+│   └── history.json        # Historia losowań (aktualizowana przez GitHub API)
+├── poker/                  # Planning poker (osobny moduł)
+│   ├── index.html
+│   ├── poker.js
+│   └── styles.css
+└── releases/               # Release management (osobny moduł)
+    └── index.html
 ```
 
 ## Historia projektu
@@ -151,57 +183,15 @@ daily-picker/
 9. Logika: odznaczenia resetują się codziennie, historia do wyczerpania puli
 10. Zmiana nazwy repo na `alfinator`
 11. Usunięcie ręcznego czyszczenia historii dla użytkowników — tylko auto-clear + admin
-12. Audit log w Firebase (`audit_log`) — logowanie zdarzeń: auto_clear, admin_clear
+12. Audit log w Firebase — logowanie zdarzeń
 13. Fix `update-capacity.bat` — obsługa `&` w nazwie pliku R&D (27.07.2026)
-14. Fix parsowania dat — etykiety kolumn zawierają rok, eliminacja kolizji dat między latami (03.08.2026)
-15. **FIX: Rozróżnienie logiki skreślenia vs wylosowania (05.08.2026)**
-    - Skreśleni użytkownicy NIE są dodawani do historii
-    - Auto-clear liczy TYLKO wylosowanych, nie skreślonych
-    - Historia jest prawidłowo przywracana po odznaczeniu
-    - Ulepszona wizualizacja: szary (skreślony) vs żółty (wylosowany)
-16. **FEAT: Panel admina do zarządzania historią (05.08.2026)**
-    - admin-history.html — pełny panel do view/export/restore
-    - Export historii do JSON (backup)
-    - Restore z JSON-a (przywrócenie)
-    - Dodawanie wpisów ręcznie
-    - Przeglądanie audit log-u
-    - Dokumentacja: PRZYWRACANIE_HISTORII.md
-
-## Panel Admina do Zarządzania Historią
-
-**URL:** https://bolttech-kamilamolas.github.io/alfinator/admin-history.html
-
-Panel administracyjny do zarządzania historią losowań:
-
-- **📋 Pokaż historię bieżącą** — tabela ze wszystkimi wpisami
-- **📥 Eksportuj do JSON** — backup historii
-- **♻️ Przywróć Historię** — wklej JSON i przywróć
-- **➕ Dodaj Wpis Ręcznie** — dla zmian manualnych
-- **📊 Dziennik Audytu** — co się stało (auto_clear, admin_clear)
-- **🗑️ Wyczyść Historię** — admin tylko
-- **⚙️ Status Bazy** — sprawdzenie połączenia
-
-Szczegóły: [`PRZYWRACANIE_HISTORII.md`](./PRZYWRACANIE_HISTORII.md)
-
-Przycisk "Wyczyść historię" jest ukryty dla zwykłych użytkowników. Aby uzyskać dostęp:
-
-```
-https://bolttech-kamilamolas.github.io/alfinator/?admin
-```
-
-Dodanie `?admin` do URL pokazuje przycisk czyszczenia historii. Każde czyszczenie (ręczne i automatyczne) jest logowane w Firebase w węźle `audit_log`.
-
-### Audit log (Firebase)
-
-Ścieżka: `audit_log/`
-
-Rejestrowane zdarzenia:
-- `auto_clear` — historia wyczyszczona automatycznie (wszyscy wylosowani)
-- `admin_clear` — historia wyczyszczona ręcznie przez admina
-
-Każdy wpis zawiera:
-- `action` — typ zdarzenia
-- `timestamp` — data i godzina (ISO 8601)
-- `details` — dodatkowe info (np. ile wpisów było w historii)
-
-Podgląd: [Firebase Console → Realtime Database → audit_log](https://console.firebase.google.com/project/alfinator/database/alfinator-default-rtdb/data/~2Faudit_log)
+14. Fix parsowania dat — etykiety kolumn zawierają rok (03.08.2026)
+15. Fix: Rozróżnienie logiki skreślenia vs wylosowania (05.08.2026)
+16. Panel admina do zarządzania historią (05.08.2026)
+17. **MIGRACJA: Firebase → GitHub API (27.08.2026)**
+    - Usunięcie Firebase SDK
+    - Historia przechowywana w `data/history.json` via GitHub Contents API
+    - Token w localStorage (nie w kodzie)
+    - Zero backendu — w pełni statyczna aplikacja
+    - Polling co 30s (limity GitHub API)
+    - Auto-clear: tylko gdy cały zespół wylosowany
