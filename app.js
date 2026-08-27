@@ -1,31 +1,21 @@
 // ALFinator — Daily Standup Picker for ALF Team
-// Auto-fetches Excel from GitHub repo, shared history via Firebase
+// Auto-fetches Excel from GitHub repo, shared history via GitHub API
 // History auto-clears when all members are picked. Manual clear: admin only (?admin in URL).
 
 (function () {
     'use strict';
 
-    // --- FIREBASE CONFIG ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyD4-D3dN22UlqKc8-PLfdwQl83vmbdbh4s",
-        authDomain: "alfinator.firebaseapp.com",
-        databaseURL: "https://alfinator-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "alfinator",
-        storageBucket: "alfinator.firebasestorage.app",
-        messagingSenderId: "476621019100",
-        appId: "1:476621019100:web:d4929e269c4abdf694e119"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
     // --- CONFIG ---
+    const GITHUB_REPO = 'bolttech-KamilaMolas/alfinator';
+    const GITHUB_TOKEN = 'WSTAW_SWOJ_TOKEN_TUTAJ'; // Fine-grained PAT with Contents: Read/Write
+    const HISTORY_PATH = 'data/history.json';
     const EXCEL_URL = 'https://bolttech-kamilamolas.github.io/alfinator/data/capacity.xlsx';
 
     const EXCLUDED_MEMBERS = [
         'Kamila Molas',
         'Adrian Słabicki',
-        'Szymon Bartnik'
+        'Szymon Bartnik',
+        'Mikołaj Banaszkiewicz'
     ];
 
     // Admin mode: append ?admin to URL to see admin controls
@@ -36,20 +26,65 @@
     let weekColumns = [];
     let currentWeek = null;
     let disabledMembers = new Set();
-    let weekHistory = []; // shared via Firebase
+    let weekHistory = []; // shared via GitHub
+    let historySha = null; // SHA of history.json for GitHub API updates
 
-    // --- AUDIT LOG ---
-    function getAuditRef() {
-        return db.ref('audit_log');
+    // --- GITHUB API HELPERS ---
+    async function fetchHistory() {
+        try {
+            // Read history.json from GitHub (public repo, no token needed for read)
+            const response = await fetch(
+                `https://api.github.com/repos/${GITHUB_REPO}/contents/${HISTORY_PATH}`,
+                { headers: { 'Accept': 'application/vnd.github.v3+json' } }
+            );
+            if (response.status === 404) {
+                // File doesn't exist yet
+                historySha = null;
+                return [];
+            }
+            if (!response.ok) throw new Error(`GitHub API: ${response.status}`);
+            const data = await response.json();
+            historySha = data.sha;
+            const content = JSON.parse(atob(data.content));
+            return Array.isArray(content) ? content : [];
+        } catch (error) {
+            console.error('Failed to fetch history from GitHub:', error);
+            return [];
+        }
     }
 
-    function logAuditEvent(action, details) {
-        const entry = {
-            action: action,
-            timestamp: new Date().toISOString(),
-            details: details || null
-        };
-        getAuditRef().push(entry);
+    async function saveHistory(entries) {
+        try {
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify(entries, null, 2))));
+            const body = {
+                message: `Update daily history ${new Date().toLocaleDateString('pl-PL')}`,
+                content: content
+            };
+            if (historySha) {
+                body.sha = historySha;
+            }
+            const response = await fetch(
+                `https://api.github.com/repos/${GITHUB_REPO}/contents/${HISTORY_PATH}`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                }
+            );
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(`GitHub PUT failed: ${response.status} - ${err.message}`);
+            }
+            const result = await response.json();
+            historySha = result.content.sha;
+        } catch (error) {
+            console.error('Failed to save history to GitHub:', error);
+            throw error;
+        }
     }
 
     // --- DOM REFS ---
@@ -67,38 +102,96 @@
     const historyList = document.getElementById('historyList');
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
-    // --- FIREBASE HISTORY ---
-    function getHistoryRef() {
-        return db.ref('history/current');
+    // --- HISTORY MANAGEMENT ---
+    async function loadHistory() {
+        try {
+            const allHistory = await fetchHistory();
+            // Filter by today's date
+            const today = new Date().toLocaleDateString('pl-PL', {
+                weekday: 'long', day: 'numeric', month: 'long'
+            });
+            weekHistory = allHistory.filter(h => h.date === today);
+            renderMembers();
+            renderHistory();
+        } catch (error) {
+            console.error('Failed to load history:', error);
+            // Still render members even if history fails
+            renderMembers();
+            renderHistory();
+        }
     }
 
     function listenToHistory() {
-        getHistoryRef().orderByKey().on('value', (snapshot) => {
-            weekHistory = [];
-            snapshot.forEach((child) => {
-                weekHistory.push(child.val());
+        // Poll history every 30s (GitHub API has rate limits, no need for 5s)
+        loadHistory();
+        setInterval(loadHistory, 30000);
+    }
+
+    async function addToHistory(name) {
+        try {
+            const date = new Date().toLocaleDateString('pl-PL', {
+                weekday: 'long', day: 'numeric', month: 'long'
             });
+            const entry = {
+                name,
+                date,
+                timestamp: new Date().toISOString()
+            };
+
+            // Reload latest to avoid conflicts
+            const allHistory = await fetchHistory();
+            allHistory.push(entry);
+            await saveHistory(allHistory);
+
+            // Update local state
+            weekHistory = allHistory.filter(h => h.date === date);
             renderMembers();
             renderHistory();
-        });
+        } catch (error) {
+            console.error('Failed to add to history:', error);
+            alert('Nie udało się zapisać losowania. Sprawdź token GitHub.');
+        }
     }
 
-    function addToHistory(name) {
-        // WAŻNE: dodajemy TYLKO wylosowane osoby, nie skreślone!
-        const entry = {
-            name: name,
-            date: new Date().toLocaleDateString('pl-PL', {
+    async function removeLastFromHistory() {
+        try {
+            const allHistory = await fetchHistory();
+            const today = new Date().toLocaleDateString('pl-PL', {
                 weekday: 'long', day: 'numeric', month: 'long'
-            }),
-            timestamp: new Date().toISOString()
-        };
-        getHistoryRef().push(entry);
+            });
+            // Remove last entry from today
+            for (let i = allHistory.length - 1; i >= 0; i--) {
+                if (allHistory[i].date === today) {
+                    allHistory.splice(i, 1);
+                    break;
+                }
+            }
+            await saveHistory(allHistory);
+            weekHistory = allHistory.filter(h => h.date === today);
+            renderMembers();
+            renderHistory();
+        } catch (error) {
+            console.error('Failed to remove from history:', error);
+        }
     }
 
-    function clearWeekHistory() {
-        logAuditEvent('admin_clear', { entriesCount: weekHistory.length });
-        getHistoryRef().remove();
-        resultSection.classList.add('hidden');
+    async function clearWeekHistory() {
+        try {
+            const allHistory = await fetchHistory();
+            const today = new Date().toLocaleDateString('pl-PL', {
+                weekday: 'long', day: 'numeric', month: 'long'
+            });
+            // Remove all entries from today
+            const filtered = allHistory.filter(h => h.date !== today);
+            await saveHistory(filtered);
+
+            resultSection.classList.add('hidden');
+            weekHistory = [];
+            renderMembers();
+            renderHistory();
+        } catch (error) {
+            console.error('Failed to clear history:', error);
+        }
     }
 
     // --- FETCH EXCEL FROM REPO ---
@@ -182,7 +275,6 @@
                     label = formatDateLabel(val);
                 } else {
                     const str = String(val).trim();
-                    // Try parsing as date string (e.g. "2026-08-03" from SheetJS)
                     const parsed = new Date(str);
                     if (!isNaN(parsed.getTime()) && str.match(/^\d{4}-\d{2}-\d{2}/)) {
                         label = formatDateLabel(parsed);
@@ -285,7 +377,6 @@
                 return new Date(year, month, day);
             }
         }
-        // Fallback for old format without year (assume current year)
         if (parts.length >= 2) {
             const day = parseInt(parts[0]);
             const month = months[parts[1]];
@@ -319,7 +410,6 @@
             todayLabel.innerHTML = `📅 Dziś: <strong>${dateStr}</strong>`;
         }
 
-        // Show admin controls only for admin
         if (IS_ADMIN) {
             clearHistoryBtn.classList.remove('hidden');
         }
@@ -403,10 +493,6 @@
     }
 
     // --- DISABLED MEMBERS (localStorage - resets daily) ---
-    // WAŻNE: skreśleni (disabled) ≠ wylosowani (picked)
-    // - Skreślony: checkbox odkryty, osoba NIE pojawia się w losowaniu, NIE dodawana do historii
-    // - Wylosowany: pojawia się w historii ze znaczkiem ✓, podlega auto-clear
-    
     function getDisabledKey() {
         const today = new Date().toISOString().slice(0, 10);
         return `alfinator-disabled-${today}`;
@@ -414,7 +500,6 @@
 
     function loadDisabledMembers() {
         try {
-            // Wyczyść stare wpisy z poprzednich dni
             for (let i = localStorage.length - 1; i >= 0; i--) {
                 const key = localStorage.key(i);
                 if (key && key.startsWith('alfinator-disabled-') && key !== getDisabledKey()) {
@@ -432,7 +517,6 @@
         localStorage.setItem(getDisabledKey(), JSON.stringify([...disabledMembers]));
     }
 
-    // Check for day change every 60 seconds and reset if needed
     function startDayChangeWatcher() {
         let lastKey = getDisabledKey();
         setInterval(() => {
@@ -442,7 +526,7 @@
                 loadDisabledMembers();
                 renderMembers();
             }
-        }, 60000); // Check every minute
+        }, 60000);
     }
 
     // --- RANDOM PICK ---
@@ -476,21 +560,18 @@
             alert('Brak dostępnych osób do wylosowania!');
             return;
         }
-        animatePick(() => {
+        animatePick(async () => {
             resultName.textContent = picked.fullName;
-            addToHistory(picked.fullName);
+            await addToHistory(picked.fullName);
 
-            // Auto-clear gdy TYLKO skreślone osoby zostały (bez wylosowania nowych)
             setTimeout(() => {
-                const available = getAvailableMembers();  // osoby dostępne (nie skreślone)
-                const usedNames = new Set(weekHistory.map(h => h.name));  // wylosowane osoby
-                const remaining = available.filter(m => !usedNames.has(m.fullName));  // dostępne ale niewylosowane
-                
+                const available = getAvailableMembers();
+                const usedNames = new Set(weekHistory.map(h => h.name));
+                const remaining = available.filter(m => !usedNames.has(m.fullName));
+
                 if (remaining.length === 0 && available.length > 0) {
                     setTimeout(() => {
-                        logAuditEvent('auto_clear', { reason: 'Wszyscy wylosowani' });
-                        getHistoryRef().remove();
-                        resultSection.classList.add('hidden');
+                        clearWeekHistory();
                     }, 3000);
                 }
             }, 500);
@@ -502,7 +583,6 @@
             historyList.innerHTML = '<p class="empty-state">Nikt jeszcze nie losował</p>';
             return;
         }
-        // weekHistory is already in chronological order (Firebase push keys)
         historyList.innerHTML = weekHistory.map((h, idx) => `
             <div class="history-item">
                 <span class="name">${idx + 1}. ${h.name}</span>
@@ -514,10 +594,8 @@
     // --- EVENTS ---
     pickBtn.addEventListener('click', doPick);
 
-    rerollBtn.addEventListener('click', () => {
-        getHistoryRef().limitToLast(1).once('value', (snapshot) => {
-            snapshot.forEach(child => child.ref.remove());
-        });
+    rerollBtn.addEventListener('click', async () => {
+        await removeLastFromHistory();
         doPick();
     });
 
@@ -534,7 +612,7 @@
     });
 
     // --- INIT ---
-    startDayChangeWatcher(); // Start monitoring for day changes
+    startDayChangeWatcher();
     fetchExcelFromRepo();
 
 })();
