@@ -7,7 +7,7 @@
 
     // --- CONFIG ---
     const GITHUB_REPO = 'bolttech-KamilaMolas/alfinator';
-    const GITHUB_TOKEN = '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'; // Fine-grained PAT with Contents: Read/Write
+    const GITHUB_TOKEN = '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'; // Fine-grained PAT with Contents: Read/Write
     const HISTORY_PATH = 'data/history.json';
     const EXCEL_URL = 'https://bolttech-kamilamolas.github.io/alfinator/data/capacity.xlsx';
 
