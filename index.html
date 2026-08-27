@@ -66,6 +66,12 @@
             <button class="btn btn-danger btn-small hidden" id="clearHistoryBtn">🔑 Wyczyść historię (admin)</button>
         </section>
 
+        <section class="token-section hidden" id="tokenSection" style="background: var(--yellow-bg, #fdfdf2); border: 1px solid var(--yellow-20, #f9f7cc); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; text-align: center;">
+            <p style="font-size: 0.85rem; color: var(--navy, #170f4f); margin-bottom: 0.5rem;">🔑 Wklej token GitHub żeby losowanie zapisywało historię:</p>
+            <input type="password" id="tokenInput" placeholder="github_pat_..." style="width: 100%; padding: 0.5rem; border: 1px solid var(--cyan-20, #ccf1f4); border-radius: 6px; font-size: 0.8rem; margin-bottom: 0.5rem;">
+            <button class="btn btn-primary" id="saveTokenBtn" style="font-size: 0.8rem; padding: 0.4rem 1rem;">Zapisz</button>
+        </section>
+
         <footer class="footer">
             <p>Historia czyści się automatycznie po wylosowaniu wszystkich · Dane z repo</p>
             <p style="margin-top: 0.5rem; font-size: 0.7rem;">

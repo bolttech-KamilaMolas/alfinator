@@ -7,7 +7,7 @@
 
     // --- CONFIG ---
     const GITHUB_REPO = 'bolttech-KamilaMolas/alfinator';
-    const GITHUB_TOKEN = 'WSTAW_SWOJ_TOKEN_TUTAJ'; // Fine-grained PAT with Contents: Read/Write
+    const GITHUB_TOKEN = localStorage.getItem('alfinator-github-token') || ''; // Fine-grained PAT with Contents: Read/Write
     const HISTORY_PATH = 'data/history.json';
     const EXCEL_URL = 'https://bolttech-kamilamolas.github.io/alfinator/data/capacity.xlsx';
 
@@ -614,5 +614,23 @@
     // --- INIT ---
     startDayChangeWatcher();
     fetchExcelFromRepo();
+
+    // --- TOKEN UI ---
+    const tokenSection = document.getElementById('tokenSection');
+    const tokenInput = document.getElementById('tokenInput');
+    const saveTokenBtn = document.getElementById('saveTokenBtn');
+
+    if (!GITHUB_TOKEN) {
+        tokenSection.classList.remove('hidden');
+    }
+
+    saveTokenBtn.addEventListener('click', () => {
+        const val = tokenInput.value.trim();
+        if (val) {
+            localStorage.setItem('alfinator-github-token', val);
+            tokenSection.classList.add('hidden');
+            location.reload();
+        }
+    });
 
 })();
