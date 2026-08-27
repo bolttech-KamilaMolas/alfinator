@@ -594,11 +594,12 @@
             await addToHistory(picked.fullName);
 
             setTimeout(() => {
-                const available = getAvailableMembers();
+                // Auto-clear when everyone from full team has been picked
+                const allMembers = getMembersForWeek();
                 const usedNames = new Set(weekHistory.map(h => h.name));
-                const remaining = available.filter(m => !usedNames.has(m.fullName));
+                const notYetPicked = allMembers.filter(m => !usedNames.has(m.fullName));
 
-                if (remaining.length === 0 && available.length > 0) {
+                if (notYetPicked.length === 0 && allMembers.length > 0) {
                     setTimeout(() => {
                         clearWeekHistory();
                     }, 3000);
