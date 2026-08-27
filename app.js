@@ -139,7 +139,9 @@
             const today = new Date().toLocaleDateString('pl-PL', {
                 weekday: 'long', day: 'numeric', month: 'long'
             });
+            console.log('[ALFinator] History loaded:', allHistory.length, 'entries, today:', today);
             weekHistory = allHistory.filter(h => h.date === today);
+            console.log('[ALFinator] Today entries:', weekHistory.length);
             renderMembers();
             renderHistory();
         } catch (error) {
