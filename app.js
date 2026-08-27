@@ -45,7 +45,8 @@
             if (!response.ok) throw new Error(`GitHub API: ${response.status}`);
             const data = await response.json();
             historySha = data.sha;
-            const content = JSON.parse(atob(data.content));
+            const decoded = decodeURIComponent(escape(atob(data.content)));
+            const content = JSON.parse(decoded);
             return Array.isArray(content) ? content : [];
         } catch (error) {
             console.error('Failed to fetch history from GitHub:', error);
