@@ -33,11 +33,11 @@
     async function fetchHistory() {
         try {
             // Read history.json from GitHub (cache-bust to always get fresh SHA)
-            const fetchHeaders = { 'Accept': 'application/vnd.github.v3+json', 'If-None-Match': '' };
+            const fetchHeaders = { 'Accept': 'application/vnd.github.v3+json' };
             if (GITHUB_TOKEN) fetchHeaders['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
             const response = await fetch(
                 `https://api.github.com/repos/${GITHUB_REPO}/contents/${HISTORY_PATH}?t=${Date.now()}`,
-                { headers: fetchHeaders }
+                { headers: fetchHeaders, cache: 'no-store' }
             );
             if (response.status === 404) {
                 // File doesn't exist yet
