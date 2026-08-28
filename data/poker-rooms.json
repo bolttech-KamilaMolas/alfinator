@@ -70,14 +70,12 @@
           "name": "Mod",
           "role": "dev",
           "moderator": true,
-          "vote": "5d",
           "lastSeen": 1787914598182
         },
         "P2": {
           "name": "P2",
           "role": "qa",
           "moderator": false,
-          "vote": "3d",
           "lastSeen": 1787914598182
         }
       },
