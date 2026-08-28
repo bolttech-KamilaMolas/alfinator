@@ -8,14 +8,6 @@
       "state": "voting",
       "currentIssue": "ghj",
       "roundId": "mtcv6mxa",
-      "players": {
-        "Kamila Molas": {
-          "name": "Kamila Molas",
-          "role": "other",
-          "moderator": true,
-          "lastSeen": 1787922581548
-        }
-      },
       "estimates": {},
       "estimateSaved": false,
       "issueList": [
