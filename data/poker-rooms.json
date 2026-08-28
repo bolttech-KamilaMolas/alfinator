@@ -20,7 +20,7 @@
           "name": "Bob Test",
           "role": "qa",
           "moderator": false,
-          "vote": null,
+          "vote": "3d",
           "lastSeen": 1787912709815
         }
       },
