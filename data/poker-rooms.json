@@ -56,30 +56,6 @@
         }
       },
       "estimates": {}
-    },
-    "RNDT4": {
-      "created": "2026-08-28T10:56:38.182Z",
-      "name": "Round Test",
-      "moderator": "Mod",
-      "unit": "md",
-      "state": "voting",
-      "currentIssue": "",
-      "roundId": "",
-      "players": {
-        "Mod": {
-          "name": "Mod",
-          "role": "dev",
-          "moderator": true,
-          "lastSeen": 1787914598182
-        },
-        "P2": {
-          "name": "P2",
-          "role": "qa",
-          "moderator": false,
-          "lastSeen": 1787914598182
-        }
-      },
-      "estimates": {}
     }
   }
 }
