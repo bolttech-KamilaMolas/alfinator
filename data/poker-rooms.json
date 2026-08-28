@@ -1,3 +1,23 @@
 {
-  "poker_rooms": {}
+  "poker_rooms": {
+    "F386C": {
+      "created": "2026-08-28T11:24:14.732Z",
+      "name": "ALF Refinement - 28.08.2026",
+      "moderator": "Kamila Molas",
+      "unit": "md",
+      "state": "voting",
+      "currentIssue": "",
+      "roundId": "",
+      "players": {
+        "Kamila Molas": {
+          "name": "Kamila Molas",
+          "role": "other",
+          "moderator": true,
+          "vote": null,
+          "lastSeen": 1787916254732
+        }
+      },
+      "estimates": {}
+    }
+  }
 }
