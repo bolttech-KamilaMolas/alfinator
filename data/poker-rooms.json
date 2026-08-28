@@ -1,30 +1,3 @@
 {
-  "poker_rooms": {
-    "TEST5": {
-      "created": "2026-08-28T10:25:07.575Z",
-      "name": "E2E Test Room",
-      "moderator": "Alice Test",
-      "unit": "md",
-      "state": "voting",
-      "currentIssue": "",
-      "roundId": "",
-      "players": {
-        "Alice_Test": {
-          "name": "Alice Test",
-          "role": "dev",
-          "moderator": true,
-          "vote": null,
-          "lastSeen": 1787912707575
-        },
-        "Bob_Test": {
-          "name": "Bob Test",
-          "role": "qa",
-          "moderator": false,
-          "vote": "3d",
-          "lastSeen": 1787912709815
-        }
-      },
-      "estimates": {}
-    }
-  }
+  "poker_rooms": {}
 }
