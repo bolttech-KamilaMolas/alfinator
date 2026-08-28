@@ -4,18 +4,9 @@
 (function () {
     'use strict';
 
-    // --- FIREBASE CONFIG (same project as daily-picker) ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyD4-D3dN22UlqKc8-PLfdwQl83vmbdbh4s",
-        authDomain: "alfinator.firebaseapp.com",
-        databaseURL: "https://alfinator-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "alfinator",
-        storageBucket: "alfinator.firebasestorage.app",
-        messagingSenderId: "476621019100",
-        appId: "1:476621019100:web:d4929e269c4abdf694e119"
-    };
-
-    firebase.initializeApp(firebaseConfig);
+    // --- STORAGE (GitHub-backed, same repo as daily-picker) ---
+    // Provided by github-store.js: a Firebase-Realtime-Database-compatible
+    // interface persisted to data/poker-rooms.json in the GitHub repo.
     const db = firebase.database();
 
     // --- CONFIG ---
@@ -176,7 +167,7 @@
             const historyRoomsArr = [];
 
             Object.entries(rooms).forEach(([code, room]) => {
-                const playerCount = room.players ? Object.keys(room.players).length : 0;
+                const playerCount = room.players ? Object.keys(activePlayers(room.players)).length : 0;
                 const estimateCount = room.estimates ? Object.keys(room.estimates).length : 0;
                 const created = new Date(room.created);
                 const dateStr = created.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -383,7 +374,8 @@
                     name: moderatorFullName,
                     role: role,
                     moderator: true,
-                    vote: null
+                    vote: null,
+                    lastSeen: Date.now()
                 }
             },
             estimates: {}
@@ -433,7 +425,8 @@
                 name: playerFullName,
                 role: role,
                 moderator: isRoomMod,
-                vote: null
+                vote: null,
+                lastSeen: Date.now()
             });
 
             roomRef.child('players/' + sanitizeKey(playerFullName))
@@ -642,7 +635,19 @@
         showToast('Głos oddany: ' + selectedCard);
     }
 
-    function renderPlayers(players) {
+    function activePlayers(players) {
+        // Filter out stale players (presence heartbeat expired) when using the
+        // GitHub-backed store, which has no server-side disconnect detection.
+        const isStale = (window.PokerStore && window.PokerStore.isStalePlayer) || (() => false);
+        const out = {};
+        Object.entries(players || {}).forEach(([key, p]) => {
+            if (p && p.name && !isStale(p)) out[key] = p;
+        });
+        return out;
+    }
+
+    function renderPlayers(playersRaw) {
+        const players = activePlayers(playersRaw);
         const devs = [];
         const qas = [];
         const others = [];
@@ -689,14 +694,14 @@
         `;
     }
 
-    function updateParticipantCount(players) {
-        const count = Object.keys(players).length;
+    function updateParticipantCount(playersRaw) {
+        const count = Object.keys(activePlayers(playersRaw)).length;
         participantCount.textContent = `${count} ${count === 1 ? 'osoba' : count < 5 ? 'osoby' : 'os\u00f3b'}`;
     }
 
     // --- RESULTS ---
     function showResults(room) {
-        const players = room.players || {};
+        const players = activePlayers(room.players || {});
         resultsPanel.classList.remove('hidden');
 
         const devNums = [];
@@ -1394,7 +1399,7 @@
             const rooms = snapshot.val() || {};
             let removed = 0;
             Object.entries(rooms).forEach(([code, room]) => {
-                const playerCount = room.players ? Object.keys(room.players).length : 0;
+                const playerCount = room.players ? Object.keys(activePlayers(room.players)).length : 0;
                 // Only remove rooms with no active players (historical)
                 if (playerCount === 0) {
                     db.ref('poker_rooms/' + code).remove();
