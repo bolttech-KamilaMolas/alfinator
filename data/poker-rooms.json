@@ -15,13 +15,6 @@
           "moderator": true,
           "vote": null,
           "lastSeen": 1787913071154
-        },
-        "Joiner Test": {
-          "name": "Joiner Test",
-          "role": "qa",
-          "moderator": false,
-          "vote": null,
-          "lastSeen": 1787913077935
         }
       },
       "estimates": {}
