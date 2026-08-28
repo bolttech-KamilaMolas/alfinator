@@ -358,12 +358,19 @@
                 return childRef;
             },
 
-            async once(event) {
+            async once(eventOrCb, maybeCb) {
+                // Firebase signatures supported:
+                //   once('value')                -> returns Promise<snapshot>
+                //   once('value', cb)            -> cb(snapshot) AND returns Promise
+                //   once(cb)                     -> cb(snapshot) (loose usage)
+                const cb = typeof eventOrCb === 'function' ? eventOrCb
+                    : (typeof maybeCb === 'function' ? maybeCb : null);
+
                 await ensureLoaded();
                 // Refresh from remote so once() reflects latest committed state.
                 try { await pullFromGitHub(); } catch (e) { /* use cache */ }
                 const snap = makeSnapshot(parts, ref);
-                if (typeof event === 'function') { event(snap); }
+                if (cb) { cb(snap); }
                 return snap;
             },
 
