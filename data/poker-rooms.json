@@ -37,6 +37,25 @@
         }
       },
       "estimates": {}
+    },
+    "QVWRJ": {
+      "created": "2026-08-28T10:29:45.131Z",
+      "name": "ALF Refinement - 28.08.2026",
+      "moderator": "Kamila Molas",
+      "unit": "md",
+      "state": "voting",
+      "currentIssue": "",
+      "roundId": "",
+      "players": {
+        "Kamila Molas": {
+          "name": "Kamila Molas",
+          "role": "other",
+          "moderator": true,
+          "vote": null,
+          "lastSeen": 1787912985131
+        }
+      },
+      "estimates": {}
     }
   }
 }
