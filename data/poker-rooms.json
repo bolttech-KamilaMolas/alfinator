@@ -34,6 +34,13 @@
           "moderator": true,
           "vote": null,
           "lastSeen": 1787913141123
+        },
+        "Callback Joiner": {
+          "name": "Callback Joiner",
+          "role": "qa",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1787913142960
         }
       },
       "estimates": {}
