@@ -15,6 +15,13 @@
           "moderator": true,
           "vote": null,
           "lastSeen": 1787912707575
+        },
+        "Bob_Test": {
+          "name": "Bob Test",
+          "role": "qa",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1787912709815
         }
       },
       "estimates": {}
