@@ -33,6 +33,13 @@
           "moderator": true,
           "lastSeen": 1788261402585,
           "vote": "🐱"
+        },
+        "Radosław Górski": {
+          "name": "Radosław Górski",
+          "role": "qa",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1788261403021
         }
       },
       "estimates": {},
