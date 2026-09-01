@@ -64,6 +64,13 @@
         },
         "Darya  Vasilchyk": {
           "vote": "🐱"
+        },
+        "Joanna Redes": {
+          "name": "Joanna Redes",
+          "role": "dev",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1788261675540
         }
       },
       "estimates": {},
