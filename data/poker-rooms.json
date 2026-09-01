@@ -47,6 +47,13 @@
           "moderator": false,
           "vote": null,
           "lastSeen": 1788261430778
+        },
+        "Marcin Goździewski": {
+          "name": "Marcin Goździewski",
+          "role": "dev",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1788261436302
         }
       },
       "estimates": {},
