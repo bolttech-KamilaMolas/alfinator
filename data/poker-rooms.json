@@ -75,6 +75,13 @@
           "moderator": false,
           "vote": null,
           "lastSeen": 1788261514590
+        },
+        "Jarosław Gawroński": {
+          "name": "Jarosław Gawroński",
+          "role": "qa",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1788261522064
         }
       },
       "estimates": {},
