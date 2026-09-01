@@ -54,6 +54,13 @@
           "moderator": false,
           "vote": "1d",
           "lastSeen": 1788261487333
+        },
+        "Jakub Kulesza": {
+          "name": "Jakub Kulesza",
+          "role": "other",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1788261489020
         }
       },
       "estimates": {},
