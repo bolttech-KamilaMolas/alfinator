@@ -61,6 +61,13 @@
           "moderator": false,
           "vote": "🐱",
           "lastSeen": 1788261499442
+        },
+        "Dominik Jagodziński": {
+          "name": "Dominik Jagodziński",
+          "role": "qa",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1788261505180
         }
       },
       "estimates": {},
