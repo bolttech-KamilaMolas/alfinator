@@ -17,6 +17,25 @@
           "status": "active"
         }
       ]
+    },
+    "JEPW8": {
+      "created": "2026-09-01T11:15:22.195Z",
+      "name": "ALF Refinement - 01.09.2026",
+      "moderator": "Kamila Molas",
+      "unit": "md",
+      "state": "voting",
+      "currentIssue": "",
+      "roundId": "",
+      "players": {
+        "Kamila Molas": {
+          "name": "Kamila Molas",
+          "role": "other",
+          "moderator": true,
+          "vote": null,
+          "lastSeen": 1788261322195
+        }
+      },
+      "estimates": {}
     }
   }
 }
