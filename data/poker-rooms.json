@@ -36,7 +36,14 @@
         }
       },
       "estimates": {},
-      "estimateSaved": false
+      "estimateSaved": false,
+      "issueList": [
+        {
+          "id": "mtikmu5b",
+          "name": "LSG-17654",
+          "status": "active"
+        }
+      ]
     }
   }
 }
