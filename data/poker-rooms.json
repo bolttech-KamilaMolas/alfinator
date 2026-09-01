@@ -68,6 +68,13 @@
           "moderator": false,
           "vote": null,
           "lastSeen": 1788261505180
+        },
+        "Joanna Redes": {
+          "name": "Joanna Redes",
+          "role": "dev",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1788261514590
         }
       },
       "estimates": {},
