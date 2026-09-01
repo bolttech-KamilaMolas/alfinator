@@ -71,6 +71,13 @@
           "moderator": false,
           "vote": "🐱",
           "lastSeen": 1788261795912
+        },
+        "Adam Gruszecki": {
+          "name": "Adam Gruszecki",
+          "role": "dev",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1788261799845
         }
       },
       "estimates": {},
