@@ -62,7 +62,8 @@
           "name": "Joanna Redes",
           "role": "dev",
           "moderator": false,
-          "lastSeen": 1788261956550
+          "vote": null,
+          "lastSeen": 1788261965485
         },
         "Adam Gruszecki": {
           "name": "Adam Gruszecki",
