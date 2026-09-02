@@ -90,6 +90,25 @@
           "status": "pending"
         }
       ]
+    },
+    "RVU4N": {
+      "created": "2026-09-02T13:00:51.801Z",
+      "name": "ALF Refinement - 02.09.2026",
+      "moderator": "Kamila Molas",
+      "unit": "md",
+      "state": "voting",
+      "currentIssue": "",
+      "roundId": "",
+      "players": {
+        "Kamila Molas": {
+          "name": "Kamila Molas",
+          "role": "other",
+          "moderator": true,
+          "vote": null,
+          "lastSeen": 1788354051801
+        }
+      },
+      "estimates": {}
     }
   }
 }
