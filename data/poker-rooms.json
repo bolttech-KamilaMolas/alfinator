@@ -116,6 +116,13 @@
           "moderator": true,
           "lastSeen": 1789474014572,
           "vote": "5d"
+        },
+        "Adam Gruszecki": {
+          "name": "Adam Gruszecki",
+          "role": "dev",
+          "moderator": false,
+          "vote": null,
+          "lastSeen": 1789474023395
         }
       },
       "estimates": {},
