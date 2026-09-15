@@ -118,7 +118,8 @@
           "lastSeen": 1789473994440
         }
       },
-      "estimates": {}
+      "estimates": {},
+      "estimateSaved": false
     }
   }
 }
