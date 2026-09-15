@@ -107,7 +107,7 @@
       "moderator": "Kamila Molas",
       "unit": "md",
       "state": "voting",
-      "currentIssue": "",
+      "currentIssue": "123",
       "roundId": "",
       "players": {
         "Kamila Molas": {
