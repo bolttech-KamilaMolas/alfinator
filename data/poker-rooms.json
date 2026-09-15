@@ -109,22 +109,6 @@
       "state": "revealed",
       "currentIssue": "123",
       "roundId": "mu2mm3jf",
-      "players": {
-        "Kamila Molas": {
-          "name": "Kamila Molas",
-          "role": "other",
-          "moderator": true,
-          "lastSeen": 1789474054732,
-          "vote": "5d"
-        },
-        "Adam Gruszecki": {
-          "name": "Adam Gruszecki",
-          "role": "dev",
-          "moderator": false,
-          "vote": "2d",
-          "lastSeen": 1789474063755
-        }
-      },
       "estimates": {
         "-mu2mn9ez-0eewe": {
           "issue": "123",
