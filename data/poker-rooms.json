@@ -126,6 +126,25 @@
           "status": "active"
         }
       ]
+    },
+    "JZW4P": {
+      "created": "2026-09-17T11:19:38.123Z",
+      "name": "ALF Refinement - 17.09.2026",
+      "moderator": "Kamila Molas",
+      "unit": "md",
+      "state": "voting",
+      "currentIssue": "",
+      "roundId": "",
+      "players": {
+        "Kamila Molas": {
+          "name": "Kamila Molas",
+          "role": "other",
+          "moderator": true,
+          "vote": null,
+          "lastSeen": 1789643978124
+        }
+      },
+      "estimates": {}
     }
   }
 }
