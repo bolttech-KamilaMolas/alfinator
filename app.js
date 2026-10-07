@@ -630,8 +630,41 @@
         fetchExcelFromRepo();
     });
 
+    // --- DAILY AUTO-REFRESH (9:30 Europe/Warsaw) ---
+    // Codziennie o 9:30 czasu warszawskiego przeładowujemy stronę, aby pobrać
+    // najświeższą obecność (capacity.xlsx) i historię bez ręcznego odświeżania.
+    const REFRESH_HOUR = 9;
+    const REFRESH_MINUTE = 30;
+
+    function warsawNow() {
+        // Aktualny czas w strefie Europe/Warsaw (odporne na DST i strefę przeglądarki)
+        return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Warsaw' }));
+    }
+
+    function msUntilNextRefresh() {
+        const now = warsawNow();
+        const target = new Date(now);
+        target.setHours(REFRESH_HOUR, REFRESH_MINUTE, 0, 0);
+        if (now >= target) {
+            // Dzisiejsza 9:30 już minęła → zaplanuj na jutro
+            target.setDate(target.getDate() + 1);
+        }
+        return target.getTime() - now.getTime();
+    }
+
+    function scheduleDailyRefresh() {
+        const delay = msUntilNextRefresh();
+        const mins = Math.round(delay / 60000);
+        console.log(`[ALFinator] Następne auto-odświeżenie o 9:30 (Warszawa) za ~${mins} min`);
+        setTimeout(() => {
+            console.log('[ALFinator] Auto-odświeżenie danych (9:30 Warszawa)');
+            location.reload();
+        }, delay);
+    }
+
     // --- INIT ---
     startDayChangeWatcher();
+    scheduleDailyRefresh();
     fetchExcelFromRepo();
 
 })();
