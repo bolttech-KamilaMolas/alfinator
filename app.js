@@ -132,16 +132,14 @@
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
     // --- HISTORY MANAGEMENT ---
+    // Historia kumuluje się przez cały cykl (dzień po dniu) aż wszyscy dostępni
+    // poprowadzą spotkanie. Dopiero wtedy następuje auto-clear (patrz clearWeekHistory).
+    // Zawartość history.json = bieżący cykl; czyszczenie opróżnia plik i startuje nowy cykl.
     async function loadHistory() {
         try {
             const allHistory = await fetchHistory();
-            // Filter by today's date
-            const today = new Date().toLocaleDateString('pl-PL', {
-                weekday: 'long', day: 'numeric', month: 'long'
-            });
-            console.log('[ALFinator] History loaded:', allHistory.length, 'entries, today:', today);
-            weekHistory = allHistory.filter(h => h.date === today);
-            console.log('[ALFinator] Today entries:', weekHistory.length);
+            console.log('[ALFinator] History loaded:', allHistory.length, 'entries (bieżący cykl)');
+            weekHistory = allHistory;
             renderMembers();
             renderHistory();
         } catch (error) {
@@ -174,8 +172,8 @@
             allHistory.push(entry);
             await saveHistory(allHistory);
 
-            // Update local state
-            weekHistory = allHistory.filter(h => h.date === date);
+            // Update local state — cały cykl
+            weekHistory = allHistory;
             renderMembers();
             renderHistory();
         } catch (error) {
@@ -187,18 +185,12 @@
     async function removeLastFromHistory() {
         try {
             const allHistory = await fetchHistory();
-            const today = new Date().toLocaleDateString('pl-PL', {
-                weekday: 'long', day: 'numeric', month: 'long'
-            });
-            // Remove last entry from today
-            for (let i = allHistory.length - 1; i >= 0; i--) {
-                if (allHistory[i].date === today) {
-                    allHistory.splice(i, 1);
-                    break;
-                }
+            // Reroll — usuń ostatni wpis bieżącego cyklu (niezależnie od daty)
+            if (allHistory.length > 0) {
+                allHistory.pop();
             }
             await saveHistory(allHistory);
-            weekHistory = allHistory.filter(h => h.date === today);
+            weekHistory = allHistory;
             renderMembers();
             renderHistory();
         } catch (error) {
@@ -208,13 +200,8 @@
 
     async function clearWeekHistory() {
         try {
-            const allHistory = await fetchHistory();
-            const today = new Date().toLocaleDateString('pl-PL', {
-                weekday: 'long', day: 'numeric', month: 'long'
-            });
-            // Remove all entries from today
-            const filtered = allHistory.filter(h => h.date !== today);
-            await saveHistory(filtered);
+            // Koniec cyklu — opróżnij cały plik historii. Nowy cykl startuje od zera.
+            await saveHistory([]);
 
             resultSection.classList.add('hidden');
             weekHistory = [];
